@@ -4,14 +4,14 @@
 """
 
 
-class SiteMeta():
+class SitesMeta:
     def __init__(self, site_name):
         """
         引数のサイト名からサイトの情報を読み込みデータの取得の準備を行う
         Args:
             site_name (str):サイト名
         Todo:
-            ソースを記述する
+            サイト名から取得対象データを全て読み込み保存する処理を書き込む
         """
         pass
 
@@ -23,6 +23,16 @@ class SiteMeta():
         Returns:
             object: 指定されたデータの中身
         Todo:
-            ソースを記述する
+            指定されたデータ名(キー名)の中身を返す
         """
         pass
+
+    def data_name_list(self):
+        """
+        Returns:
+            list<str>: データの名前を全て返す
+        Todo:
+            データ名を全て返す(設定ファイル内のキー)
+        """
+        pass
+

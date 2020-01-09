@@ -1,5 +1,7 @@
 """
 サイトにアクセスして操作を行う場合の処理を集めたモジュール
+Todo:
+    サイト依存データをsitesmeta.pyから読み込む仕組みを組み込む
 """
 
 
@@ -40,7 +42,7 @@ class SiteAccess():
         Args:
             site_name (str):HTMLの取得を行うサイトのURL
         Returns:
-            Union[int, list[Union[int,str]]]:javascriptがコンパイルされたHTML基本的には文字列が返される
+            Union[int, list[Union[int,str]]]:javascriptがコンパイルされたHTML基本的には文字列が返されるイメージで良い
         """
         # インスタンスにて指定したサイトにアクセスする(アクセスしたタイミングでjavascriptがコンパイルされる)
         self.DRIVER.get(url)

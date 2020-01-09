@@ -1,10 +1,18 @@
+"""
+Asosのサイトの操作を行う用のクラス
+このクラスを使用しAsosについては操作を行う
+Todo:
+    このクラスは抽象化対象
+    ソースを書き込む
+"""
+
 from bs4 import BeautifulSoup
-from itemscraping.scriptcomp import ScriptCompyle
+from itemscraping.siteaccess import SiteAccess
+
 
 class Asos():
     """
-    asosの商品スクレイピング用オブジェクト
-    このオブジェクトを使用して在庫の有無を取得する
+    asosのサイトの操作を行う用のクラス
     """
     # スクレイピング用
     bf = None
@@ -12,23 +20,23 @@ class Asos():
     # 商品名
     item_name = None
 
-    def __init__(self,url,item_name):
+    def __init__(self):
         """
-        Args:
-            @param url(str):在庫取得先のURL
-            @param item_name(str):商品名
+        Todo:
+            初期化に何が必要かは後ほど検討
         """
-        sc = ScriptCompyle(url)
-        self.bf = BeautifulSoup(sc.script_compaill(),'html.parser')
-        self.item_name = item_name
-
+        pass
 
     def item_stock_info(self):
         """
         在庫の取得のデータの有無の取得
-        Return:
-            @return item_info_list(list<str>):商品の在庫有無
+        Returns:
+            list<str>: 商品の在庫一覧
         """
+        sa = SiteAccess()
+        self.bf = BeautifulSoup(sa.script_compile(url), 'html.parser')
+        self.item_name = item_name
+
         item_info = self.bf.find(id='main-size-select-0').find_all('option')
 
         # 商品のサイズリスト

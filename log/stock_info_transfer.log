@@ -1,0 +1,13 @@
+2020-01-11 17:54:23,825    ERROR elf.__class__.__name__:
+2020-01-11 17:54:59,840    ERROR elf.__class__.__name__:取得できません
+2020-01-11 18:16:13,937    ERROR aaa:str(e)
+2020-01-11 18:16:33,249    ERROR aaa:name 'shop' is not defined
+2020-01-11 18:18:18,220    ERROR aaa:(<class 'NameError'>, NameError("name 'shop' is not defined"), <traceback object at 0x102225d70>)
+2020-01-11 18:18:43,041    ERROR aaa:(<class 'NameError'>, NameError("name 'shop' is not defined"), <traceback object at 0x1022a6140>)
+2020-01-11 18:19:11,451    ERROR aaa:(<class 'NameError'>, NameError("name 'shop' is not defined"), <traceback object at 0x10201a050>)
+2020-01-11 18:20:54,551    ERROR aaa:(<class 'NameError'>, NameError("name 'shop' is not defined"), <traceback object at 0x102299f00>)
+2020-01-11 18:21:58,056    ERROR aaa:(<class 'NameError'>, NameError("name 'shop' is not defined"), <traceback object at 0x102299cd0>)
+2020-01-11 18:23:16,684    ERROR aaa:Traceback (most recent call last):
+                                          File "<input>", line 2, in <module>
+                                        NameError: name 'shop' is not defined
+

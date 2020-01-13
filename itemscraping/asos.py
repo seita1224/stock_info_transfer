@@ -34,8 +34,8 @@ class Asos():
             list<str>: 商品の在庫一覧
         """
         sa = SiteAccess()
-        self.bf = BeautifulSoup(sa.script_compile(url), 'html.parser')
-        self.item_name = item_name
+        self.bf = BeautifulSoup(sa.script_compile(), 'html.parser')
+
 
         item_info = self.bf.find(id='main-size-select-0').find_all('option')
 

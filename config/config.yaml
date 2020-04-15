@@ -6,7 +6,9 @@ Shop:
       SiteURL: 'https://www.asos.com/'
       ItemOfInfo:
         ItemSizeList:
-          ItemSizeListCssSelector: '#main-size-select-0'
+          ItemSizeListCssSelector:
+            - '#main-size-select-0'
+            - 'option'
 
   # 商品販売先サイト情報
   SellSite:
@@ -22,16 +24,29 @@ Shop:
       ItemOfInfo:
         ItemListInfo:
           ItemListURL: 'https://www.buyma.com/my/sell/#/'
-          ItemNameCssSelector: '#inputform > table > tbody > tr > td.item_name > p > a'
-          ItemIdCssSelector: '#inputform > table > tbody > tr > td.item_name > p.fab-typo-xsmall.mg_t5 > a'
+          ItemName:
+            ClassKey: 'data-vt'
+            ClassData: '/vt/my/buyeritems/item_name/.+'
+          ItemId:
+            ClassKey: 'data-vt'
+            ClassData: '/vt/my/buyeritems/item_id/.+'
         ItemStockInfo:
-          ItemStockInfoCssSelector:
-            # buymaの出品リストから在庫状況にたどり着くまでにクリックする必要のあるリンクと入力の必要な箇所のCSSセレクターを記述する
-            # 在庫ウィジット表示編集リンク
-            - '#inputform > table > tbody > tr > td.js_item_colorsize_edit > a'
-            # 在庫ウィジットのサイズごとの在庫状況
-            - '#my > div.ui-dialog.ui-widget.ui-widget-content.ui-corner-all.fab-dialog--primary.cs-dialog > div.js-color-size-popup-box.fab-design-mg--t15.ui-dialog-content.ui-widget-content > div > div.js-size-input-wrap.color-size-color-wrap > table > tbody > tr > td.fab-design-txtleft.fab-form > div > select'
-            # 在庫ウィジットの買い付けできる合計数量
-            - '#my > div.ui-dialog.ui-widget.ui-widget-content.ui-corner-all.fab-dialog--primary.cs-dialog > div.js-color-size-popup-box.fab-design-mg--t15.ui-dialog-content.ui-widget-content > div > div.sell-unit-summary-wrap > div > div > span > input.js-colorsize-capacity-amount.sell-unit-summary-input'
-            # 在庫ウェジットの更新ボタン
-            - '#my > div.ui-dialog.ui-widget.ui-widget-content.ui-corner-all.fab-dialog--primary.cs-dialog > div.js-color-size-popup-box.fab-design-mg--t15.ui-dialog-content.ui-widget-content > div > div.csp-decide > a.js-commit-changes.fab-button.fab-button--primary.fab-button--m'
+          ItemStockURL: 'https://www.buyma.com/my/sell/#/'
+          ItemStockInfo:
+            StockActions:
+              # buymaの出品リストから在庫状況にたどり着くまでにクリックする必要のあるリンクと入力の必要な箇所のCSSセレクターを記述する
+              # 在庫ウィジット表示編集リンク
+              - Click: CssSelector
+                CssSelector: '#inputform > table > tbody > tr > td.js_item_colorsize_edit > a'
+
+              # 在庫ウィジットのサイズごとの在庫状況
+              - Read: CssSelector
+                CssSelector: '#my > div.ui-dialog.ui-widget.ui-widget-content.ui-corner-all.fab-dialog--primary.cs-dialog > div.js-color-size-popup-box.fab-design-mg--t15.ui-dialog-content.ui-widget-content > div > div.js-size-input-wrap.color-size-color-wrap > table > tbody > tr > td.fab-design-txtleft.fab-form > div > select'
+
+              # 在庫ウィジットの買い付けできる合計数量
+              - Input: CssSelector
+                CssSelector: '#my > div.ui-dialog.ui-widget.ui-widget-content.ui-corner-all.fab-dialog--primary.cs-dialog > div.js-color-size-popup-box.fab-design-mg--t15.ui-dialog-content.ui-widget-content > div > div.sell-unit-summary-wrap > div > div > span > input.js-colorsize-capacity-amount.sell-unit-summary-input'
+
+              # 在庫ウェジットの更新ボタン
+              - Click: CssSelector
+                CssSelector: '#my > div.ui-dialog.ui-widget.ui-widget-content.ui-corner-all.fab-dialog--primary.cs-dialog > div.js-color-size-popup-box.fab-design-mg--t15.ui-dialog-content.ui-widget-content > div > div.csp-decide > a.js-commit-changes.fab-button.fab-button--primary.fab-button--m'

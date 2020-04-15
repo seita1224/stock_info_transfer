@@ -8,42 +8,50 @@ Todo:
 
 from bs4 import BeautifulSoup
 from itemscraping.siteaccess import SiteAccess
+from itemscraping.sitesmeta import SitesMeta
+
 
 
 class Asos():
     """
     asosのサイトの操作を行う用のクラス
     """
-    # スクレイピング用
-    bf = None
+    # サイトアクセス用オブジェクト
+    site_accsess = None
 
-    # 商品名
-    item_name = None
+    # サイト固有の情報取得用
+    meta = None
 
     def __init__(self):
         """
-        Todo:
-            初期化に何が必要かは後ほど検討
+        コンストラクタ
         """
-        pass
+        self.meta = SitesMeta().get_site_meta('BuySite.Asos')
+        self.site_accsess = SiteAccess()
 
-    def item_stock_info(self):
+    def __del__(self):
+        del self.site_accsess
+
+    def item_stock_info(self, item_url):
         """
         在庫の取得のデータの有無の取得
         Returns:
             list<str>: 商品の在庫一覧
         """
-        sa = SiteAccess()
-        self.bf = BeautifulSoup(sa.script_compile(), 'html.parser')
+        # URLからHTMLの取得
+        bf = BeautifulSoup(self.site_accsess.script_compile(input_url=item_url), 'html.parser')
 
+        # サイト上のサイズの内容を洗濯するためのCSSセレクター
+        item_stock_meta = self.meta['ItemOfInfo']['ItemSizeList']['ItemSizeListCssSelector']
 
-        item_info = self.bf.find(id='main-size-select-0').find_all('option')
+        # サイズの情報を取得する
+        item_stock_info = bf.select(item_stock_meta[0])[0].find_all(item_stock_meta[1])
 
         # 商品のサイズリスト
         item_info_list = []
 
-        for item in item_info:
-            item_info_list.append(item.string)
+        for item in item_stock_info:
+            item_info_list.append(item.text)
 
         return item_info_list
 

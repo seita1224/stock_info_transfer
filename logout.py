@@ -12,21 +12,21 @@ handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)8s %(message)s")
 logger.addHandler(handler)
 
 
-def output_log_info(class_name='EmptyClass', log_message='EmptyMessage'):
+def output_log_info(class_obj=None, log_message='EmptyMessage'):
     logger.setLevel(logging.INFO)
-    logger.info(class_name + ':' + log_message)
+    logger.info(class_obj.__class__.__name__+ ':' + log_message)
 
 
-def output_log_debug(class_name='EmptyClass', log_message='EmptyMessage'):
+def output_log_debug(class_obj=None, log_message='EmptyMessage'):
     logger.setLevel(logging.DEBUG)
-    logger.debug(class_name + ':' + log_message)
+    logger.debug(class_obj.__class__.__name__+ ':' + log_message)
 
 
-def output_log_warning(class_name='EmptyClass', log_message='EmptyMessage'):
+def output_log_warning(class_obj=None, log_message='EmptyMessage'):
     logger.setLevel(logging.WARNING)
-    logger.warning(class_name + ':' + log_message)
+    logger.warning(class_obj.__class__.__name__+ ':' + log_message)
 
 
-def output_log_error(class_name='EmptyClass', log_message='EmptyMessage'):
+def output_log_error(class_obj=None, log_message='EmptyMessage'):
     logger.setLevel(logging.ERROR)
-    logger.error(class_name + ':' + log_message)
+    logger.error(class_obj.__class__.__name__+ ':' + log_message)

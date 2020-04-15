@@ -1,8 +1,10 @@
-from itemscraping.buyma import Buyma
-from itemscraping.asos import Asos
+from itemscraping import Buyma
+from itemscraping import Asos
 
-# asos = Asos('https://www.asos.com/collusion/collusion-x001-skinny-jeans-in-blue-mid-wash/prd/10286741/','test')
-# print(asos.item_stock_info())
+asos = Asos()
+stock_list = asos.item_stock_info('https://www.asos.com/collusion/collusion-x001-skinny-jeans-in-blue-mid-wash/prd/10286741/')
+del asos
 
-buyma = Buyma()
-print(buyma.bf)
+bu = Buyma()
+print(bu.get_sell_item_stock())
+del bu

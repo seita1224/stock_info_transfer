@@ -4,8 +4,8 @@ Todo:
     サイト依存データをsitesmeta.pyから読み込む仕組みを組み込む
 """
 
-
 import time
+import traceback
 
 from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver.common.keys import Keys
@@ -14,7 +14,6 @@ from selenium.webdriver.common.action_chains import ActionChains
 from itemscraping import sitesmeta
 import logout
 import re
-
 
 
 class SiteAccess():
@@ -43,12 +42,6 @@ class SiteAccess():
         # 要素が見つかるまで繰り返し処理する時間
         self.DRIVER.implicitly_wait(10)
 
-    def __del__(self):
-        # ツール異常終了時
-        self.DRIVER.quit()
-        self.DRIVER = None
-        return
-
     def script_compile(self, input_url=None):
         """
         javascriptコンパイル済みのhtmlを返します。
@@ -60,14 +53,13 @@ class SiteAccess():
         """
         conf_url = input_url
 
-
         # インスタンスにて指定したサイトにアクセスする(アクセスしたタイミングでjavascriptがコンパイルされる)
         self.DRIVER.get(conf_url)
 
         # htmlを返す
         return self.DRIVER.page_source
 
-    def script_compile_move(self, meta:dict):
+    def script_compile_move(self, meta: dict):
         """
         javascriptコンパイル済みのhtmlを返します。
         サイト内でクリックなどの動作が必要になったタイミングで
@@ -81,14 +73,14 @@ class SiteAccess():
         repattarn = re.compile('.*Actions.*')
 
         # 辞書型の1つめのキーに「Actions」を検知する
-        if(bool(repattarn.search(list(meta.keys())[0]))):
+        if bool(repattarn.search(list(meta.keys())[0])):
             # 検知した結果各設定値のkeyの内容にそってブラウザを操作する
-            for confg_key in meta.keys():
-                if(confg_key == 'Click'):
+            for config_key in meta.keys():
+                if config_key == 'Click':
                     pass
-                elif(confg_key == 'Read'):
+                elif config_key == 'Read':
                     pass
-                elif(confg_key == 'Input'):
+                elif config_key == 'Input':
                     pass
         else:
             return None
@@ -139,10 +131,10 @@ class SiteAccess():
         Returns:
             Union[int, list[Union[int,str]]],None:javascriptがコンパイルされたHTML基本的には文字列が返されるイメージで良い
         """
-        page_source =  None
+        page_source = None
 
         # 指定されたクラス名を全て取得
-        logout.output_log_debug(self,'在庫情報の取得開始')
+        logout.output_log_debug(self, '在庫情報の取得開始')
 
         click_items = self.DRIVER.find_elements_by_class_name('js-popup-color-size')
         for click_item in click_items:
@@ -157,14 +149,15 @@ class SiteAccess():
                 actions_open.perform()
                 time.sleep(1)
                 page_source = self.DRIVER.page_source
-                logout.output_log_debug(self,'HTML取得完了')
+                logout.output_log_debug(self, 'HTML取得完了')
 
                 # 商品情報ウィジットを閉じる
                 actions_close = ActionChains(self.DRIVER)
-                wigit_close_button = self.DRIVER.find_elements_by_css_selector('#my > '
-                                                                          'div.ui-dialog.ui-widget.ui-widget-content.ui-corner-all.fab-dialog--primary.cs-dialog > '
-                                                                          'div.ui-dialog-titlebar.ui-widget-header.ui-corner-all.ui-helper-clearfix > '
-                                                                          'a')
+                wigit_close_button = self.DRIVER.find_elements_by_css_selector(
+                    '#my > '
+                    'div.ui-dialog.ui-widget.ui-widget-content.ui-corner-all.fab-dialog--primary.cs-dialog > '
+                    'div.ui-dialog-titlebar.ui-widget-header.ui-corner-all.ui-helper-clearfix > '
+                    'a')
                 actions_close.move_to_element(to_element=wigit_close_button[0])
                 actions_close.click(on_element=wigit_close_button[0])
                 actions_close.perform()
@@ -188,3 +181,9 @@ class SiteAccess():
             input_data (str):入力したいデータ
         """
         pass
+
+    def exit(self):
+        """
+            ブラウザの終了
+        """
+        self.DRIVER.quit()

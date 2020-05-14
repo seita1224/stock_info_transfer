@@ -29,9 +29,6 @@ class Buyma():
         self.site_accsess = SiteAccess()
         self.site_accsess.login(site_meta='SellSite.Buyma')
 
-    def __del__(self):
-        del self.site_accsess
-
     def get_sells_item_list(self) -> dict:
         """
         出品している商品の情報を抽出し、一覧を返す
@@ -66,7 +63,7 @@ class Buyma():
             for name in item_name_list:
                 item_name_text_list.append(name.text)
 
-            item_dict = dict(zip(item_id_text_list,item_name_text_list))
+            item_dict = dict(zip(item_id_text_list, item_name_text_list))
 
         except Exception as e:
             logout.output_log_error(self, '出品商品一覧からデータの取得が失敗しました。')
@@ -75,7 +72,7 @@ class Buyma():
 
         return item_dict
 
-    def get_sell_item_stock(self):
+    def get_sell_item_stock(self) -> dict:
         """
         Returns:
             dict<str:dict<str:dict<str:bool>>>>: 商品ごとの現在の在庫状況<商品ID:商品カラー<:<商品のサイズ名:商品の有無>>>
@@ -119,8 +116,6 @@ class Buyma():
 
                 for hedder in hedders:
                     hedder_text_list.append(str(hedder.text).strip())
-
-                #item_wigite_hedder_list.append(hedder_text_list)
 
                 # データ取得部
                 item_row_list = []  # データ格納用リスト
@@ -174,17 +169,19 @@ class Buyma():
                 color_dict = dict()
                 for color_index,color in enumerate(item_color):
                     size_dict = dict()
-                    for size_index,size in enumerate(item_size):
+                    for size_index, size in enumerate(item_size):
                         size_dict[size] = item_existence[size_index][color_index]
                     color_dict[color] = size_dict
                 stock_wigite_info[item] = color_dict
 
-            logout.output_log_debug(self,str(stock_wigite_info))
+            logout.output_log_debug(self, str(stock_wigite_info))
+
+            # ブラウザの終了
+            # self.site_accsess.exit()
 
             return stock_wigite_info
 
         except Exception as e:
             logout.output_log_error(self, '商品の在庫状況データの取得が失敗しました。')
             logout.output_log_error(self, traceback.format_exc())
-            del self.site_accsess
             raise Exception('商品の在庫状況データの取得が失敗しました。')

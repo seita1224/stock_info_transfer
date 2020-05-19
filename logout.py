@@ -7,7 +7,8 @@ import logging
 from logging import getLogger
 
 logger = getLogger('stock_info_transfer')
-handler = logging.FileHandler('./log/stock_info_transfer.log')
+# handler = logging.FileHandler('./log/stock_info_transfer.log')
+handler = logging.FileHandler('/Users/denkaseifutoshi/PycharmProjects/stock_info_transfer/log/stock_info_transfer.log')
 handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)8s %(message)s"))
 logger.addHandler(handler)
 

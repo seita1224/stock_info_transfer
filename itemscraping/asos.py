@@ -17,7 +17,7 @@ class Asos():
     asosのサイトの操作を行う用のクラス
     """
     # サイトアクセス用オブジェクト
-    site_accsess = None
+    site_access = None
 
     # サイト固有の情報取得用
     meta = None
@@ -27,21 +27,21 @@ class Asos():
         コンストラクタ
         """
         self.meta = SitesMeta().get_site_meta('BuySite.Asos')
-        self.site_accsess = SiteAccess()
+        self.site_access = SiteAccess()
 
     def __del__(self):
-        del self.site_accsess
+        del self.site_access
 
-    def item_stock_info(self, item_url):
+    def item_stock_info(self, item_url) -> list:
         """
         在庫の取得のデータの有無の取得
         Returns:
             list<str>: 商品の在庫一覧
         """
         # URLからHTMLの取得
-        bf = BeautifulSoup(self.site_accsess.script_compile(input_url=item_url), 'html.parser')
+        bf = BeautifulSoup(self.site_access.script_compile(input_url=item_url), 'html.parser')
 
-        # サイト上のサイズの内容を洗濯するためのCSSセレクター
+        # サイト上のサイズの内容を選択するためのCSSセレクター
         item_stock_meta = self.meta['ItemOfInfo']['ItemSizeList']['ItemSizeListCssSelector']
 
         # サイズの情報を取得する
@@ -51,7 +51,8 @@ class Asos():
         item_info_list = []
 
         for item in item_stock_info:
-            item_info_list.append(item.text)
+            if ' - Not available' not in item.text:
+                item_info_list.append(item.text)
 
         return item_info_list
 

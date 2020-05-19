@@ -9,14 +9,15 @@ import traceback
 from bs4 import BeautifulSoup
 from itemscraping.siteaccess import SiteAccess
 from itemscraping.sitesmeta import SitesMeta
+from models import ItemMeta, BuymaItem
 import logout
 import re
 
 
-class Buyma():
+class Buyma:
 
     # サイトアクセス用オブジェクト
-    site_accsess = None
+    site_access = None
 
     # サイト固有の情報取得用
     meta = None
@@ -26,8 +27,9 @@ class Buyma():
         インスタンス化を行った時点でログインを行う
         """
         self.meta = SitesMeta().get_site_meta('SellSite.Buyma')
-        self.site_accsess = SiteAccess()
-        self.site_accsess.login(site_meta='SellSite.Buyma')
+        self.site_access = SiteAccess()
+        self.site_access.login(site_meta='SellSite.Buyma')
+        self.__buyma_item_list: list[BuymaItem] = self.get_sell_item_stock()
 
     def get_sells_item_list(self) -> dict:
         """
@@ -39,9 +41,9 @@ class Buyma():
             item_list_meta = self.meta['ItemOfInfo']['ItemListInfo']
 
             # 出品リストのページのHTMLの取得
-            bf = BeautifulSoup(self.site_accsess.script_compile(input_url=item_list_meta['ItemListURL']),
+            bf = BeautifulSoup(self.site_access.script_compile(input_url=item_list_meta['ItemListURL']),
                                'html.parser')
-            logout.output_log_debug(self,'出品サイトURL:' + item_list_meta['ItemListURL'])
+            logout.output_log_debug(self, '出品サイトURL:' + item_list_meta['ItemListURL'])
 
             # 商品名と商品IDを取得し、辞書型に変換する
             # 商品ID
@@ -56,8 +58,8 @@ class Buyma():
             logout.output_log_debug(self, '取得データ：' + str(item_name_list))
 
             item_id_text_list = []
-            for id in item_id_list:
-                item_id_text_list.append(id.text)
+            for item_id in item_id_list:
+                item_id_text_list.append(item_id.text)
 
             item_name_text_list = []
             for name in item_name_list:
@@ -65,38 +67,39 @@ class Buyma():
 
             item_dict = dict(zip(item_id_text_list, item_name_text_list))
 
-        except Exception as e:
+        except Exception:
             logout.output_log_error(self, '出品商品一覧からデータの取得が失敗しました。')
             logout.output_log_error(self, traceback.format_exc())
             raise Exception('出品商品一覧からデータの取得が失敗しました。')
 
         return item_dict
 
-    def get_sell_item_stock(self) -> dict:
+    def get_sell_item_stock(self) -> list:
         """
         Returns:
-            dict<str:dict<str:dict<str:bool>>>>: 商品ごとの現在の在庫状況<商品ID:商品カラー<:<商品のサイズ名:商品の有無>>>
+            list: 商品ごとの現在色、サイズ、在庫の有無
         """
+
         try:
             item_stock_meta = self.meta['ItemOfInfo']['ItemStockInfo']
 
             # 出品リストのページへアクセス
-            self.site_accsess.script_compile(input_url=item_stock_meta['ItemStockURL'])
+            self.site_access.script_compile(input_url=item_stock_meta['ItemStockURL'])
             logout.output_log_debug(self, '出品サイトURL:' + item_stock_meta['ItemStockURL'])
 
             # 商品の在庫情報取得箇所指定用リスト
             item_dict = self.get_sells_item_list()
             logout.output_log_debug(self, '商品の内容:' + str(item_dict))
 
-            # 辞書型の商品情報Buyma上の商品ウェジットの中の内容が入力されている
-            stock_wigite_info = dict()
+            # Buyma上の商品ウェジットの中の内容が入力されている
+            buyma_item_list = []
 
             # 商品が存在し続ける間処理を続ける
             for item in item_dict.keys():
                 logout.output_log_info(self, '対象商品ID : ' + item)
                 logout.output_log_info(self, '対象商品名 : ' + item_dict.get(item))
 
-                bf = BeautifulSoup(self.site_accsess.item_stock_change_button_click(item),
+                bf = BeautifulSoup(self.site_access.item_stock_change_button_click_for_buyma(item),
                                    'html.parser')
 
                 stock_info = bf.select('#my > '
@@ -107,9 +110,6 @@ class Buyma():
                                        'table > '
                                        'tbody > '
                                        'tr')
-
-                # ヘッダー取得部
-                item_wigite_hedder_list = []  # 全ての商品の各ウェジットのヘッダー
 
                 hedders = stock_info[0].find_all('th')
                 hedder_text_list = []  # ヘッダー格納用リスト
@@ -130,7 +130,7 @@ class Buyma():
                     item_row_list.append(row)
 
                 # 取得対象データ
-                logout.output_log_debug(self,str(item_row_list))
+                logout.output_log_debug(self, str(item_row_list))
 
                 # データ整形部
                 # 商品のカラーリスト作成
@@ -157,7 +157,7 @@ class Buyma():
                     if row:
                         item_existence.append([])
                         for item_stock_existence_index in range(2, len(row), 1):
-                            if row[item_stock_existence_index] == '買付可' or row[item_stock_existence_index] == '手元に在庫あり':
+                            if row[item_stock_existence_index] == '買付可':
                                 item_existence[row_index].append(True)
                             else:
                                 item_existence[row_index].append(False)
@@ -166,22 +166,66 @@ class Buyma():
                 logout.output_log_debug(self, str(item_existence))
 
                 # 戻り値用の商品情報の作成
-                color_dict = dict()
-                for color_index,color in enumerate(item_color):
-                    size_dict = dict()
+                buyma_item = BuymaItem(item_id=item, item_name=item_dict[item], item_info=[])
+                for color_index, color in enumerate(item_color):
                     for size_index, size in enumerate(item_size):
-                        size_dict[size] = item_existence[size_index][color_index]
-                    color_dict[color] = size_dict
-                stock_wigite_info[item] = color_dict
+                        buyma_item.item_info = ItemMeta(color=color,
+                                                        size=size,
+                                                        existence=item_existence[size_index][color_index])
+                buyma_item_list.append(buyma_item)
 
-            logout.output_log_debug(self, str(stock_wigite_info))
+            return buyma_item_list
 
-            # ブラウザの終了
-            # self.site_accsess.exit()
-
-            return stock_wigite_info
-
-        except Exception as e:
+        except Exception:
             logout.output_log_error(self, '商品の在庫状況データの取得が失敗しました。')
             logout.output_log_error(self, traceback.format_exc())
-            raise Exception('商品の在庫状況データの取得が失敗しました。')
+            raise Exception('Buymaの出品リスト商品の在庫状況データの取得が失敗しました。')
+
+    def get_item_id_list(self) -> list:
+        """
+        Buymaにて販売中の商品IDを全て取得する
+        Returns:
+            list: 商品IDリスト
+        """
+        item_id_list = []
+
+        for buyma_item in self.__buyma_item_list:
+            item_id_list.append(buyma_item.item_id)
+        return item_id_list
+
+    def get_item_color_list(self, item_id: str) -> list:
+        """
+        Buymaにて販売中の特定の商品IDの色を全て取得する
+        Returns:
+            list: 色リスト
+        """
+        item_color_list = []
+
+        for buyma_item in self.__buyma_item_list:
+            if buyma_item.item_id == item_id:
+                for item_info in buyma_item.item_info:
+                    item_color_list.append(item_info.color)
+
+        return item_color_list
+
+    def get_item_size_list(self, item_id: str) -> list:
+        """
+        Buymaにて販売中の特定の商品IDのサイズを全て取得する
+        Returns:
+            list: サイズリスト
+        """
+        item_size_list = []
+
+        for buyma_item in self.__buyma_item_list:
+            if buyma_item.item_id == item_id:
+                for item_info in buyma_item.item_info:
+                    item_size_list.append(item_info.size)
+
+        return item_size_list
+
+    def input_item_stock(self):
+        """
+        出品商品一覧から在庫情報の入力を行う
+        Returns:
+        """
+        pass

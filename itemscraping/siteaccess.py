@@ -125,9 +125,10 @@ class SiteAccess():
         login_button = self.DRIVER.find_element_by_css_selector(login_button_css_selector)
         login_button.click()
 
-    def item_stock_change_button_click(self, click_meta_item):
+    def item_stock_change_button_click_for_buyma(self, click_meta_item):
         """
-        サイト内の指定した場所をクリックした後表示されたサイトのHTMLを返す
+        Buyma専用メソッド
+        商品一覧画面から編集ボタンを押したあとのHTMLを返す
         Returns:
             Union[int, list[Union[int,str]]],None:javascriptがコンパイルされたHTML基本的には文字列が返されるイメージで良い
         """
@@ -165,6 +166,15 @@ class SiteAccess():
                 time.sleep(1)
 
         return page_source
+
+    def input_item_stock_for_buyma(self, input_data):
+        """
+        Buyma専用メソッド
+        サイト内の特定の箇所に入力したいデータを入力する
+        Args:
+            input_data (str):入力したいデータ
+        """
+        pass
 
     def read(self):
         """

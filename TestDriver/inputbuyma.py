@@ -12,8 +12,6 @@ im_list.append(im)
 
 bi = BuymaItem(item_id='0050270103',item_name='',item_info=im_list)
 
-sa = SiteAccess()
-
 by = Buyma()
 
 # 商品情報の入力

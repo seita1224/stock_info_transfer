@@ -2,6 +2,8 @@
 サイトのメタ情報あらかじめ設定ファイルから読み込み
 上位クラスから入力されたサイト名を元にURL、ユーザ情報およびサイトのメタ情報を返す
 """
+import os
+
 import yaml
 import logout
 import traceback
@@ -20,7 +22,7 @@ class SitesMeta:
         """
         # コンフィグファイルの読み込み
         try:
-            with open('./config/config.yaml') as config_yaml_file:
+            with open('../config/config.yaml') as config_yaml_file:
                 self.config_yaml = yaml.safe_load(config_yaml_file)
 
         except Exception as e:

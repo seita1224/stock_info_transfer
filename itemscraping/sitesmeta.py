@@ -21,8 +21,9 @@ class SitesMeta:
         引数のサイト名からサイトの情報を読み込みデータの取得の準備を行う
         """
         # コンフィグファイルの読み込み
+        config_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'config', 'config.yaml')
         try:
-            with open('../config/config.yaml') as config_yaml_file:
+            with open(config_path) as config_yaml_file:
                 self.config_yaml = yaml.safe_load(config_yaml_file)
 
         except Exception as e:

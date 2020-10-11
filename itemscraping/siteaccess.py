@@ -15,6 +15,8 @@ from itemscraping import sitesmeta
 import logout
 import re
 
+from models import BuymaItem
+
 
 class SiteAccess():
     """
@@ -167,14 +169,14 @@ class SiteAccess():
 
         return page_source
 
-    def input_item_stock_for_buyma(self, input_data):
+    def input_item_stock_for_buyma(self, input_data: BuymaItem):
         """
         Buyma専用メソッド
         サイト内の特定の箇所に入力したいデータを入力する
         Args:
             input_data (str):入力したいデータ
         """
-        pass
+        logout.output_log_debug('商品情報の入力')
 
     def read(self):
         """

@@ -1,0 +1,19 @@
+from itemscraping import SiteAccess
+from models import BuymaItem, ItemMeta
+
+im = ItemMeta()
+
+im.url = 'https://www.asos.com/nike/nike-mini-swoosh-oversized-hoodie-in-olive-green/prd/14878448?CTAref=We+Recommend+Carousel_3&featureref1=we+recommend+pers'
+im.color = 'rose gold'
+im.size = 'X'
+
+im_list = []
+im_list.append(im)
+
+bi = BuymaItem(item_id='0050270103',item_name='',item_info=im_list)
+
+sa = SiteAccess()
+
+# 商品情報の入力
+sa.item_stock_change_button_click_for_buyma(bi)
+

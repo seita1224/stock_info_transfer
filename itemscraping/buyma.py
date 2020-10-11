@@ -223,9 +223,9 @@ class Buyma:
 
         return item_size_list
 
-    def input_item_stock(self):
+    def input_item_stock(self, input_data):
         """
         出品商品一覧から在庫情報の入力を行う
         Returns:
         """
-        pass
+        self.site_access.input_item_stock_for_buyma(input_data)

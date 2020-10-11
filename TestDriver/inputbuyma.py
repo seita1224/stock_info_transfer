@@ -1,4 +1,4 @@
-from itemscraping import SiteAccess
+from itemscraping import SiteAccess, Buyma
 from models import BuymaItem, ItemMeta
 
 im = ItemMeta()
@@ -14,6 +14,8 @@ bi = BuymaItem(item_id='0050270103',item_name='',item_info=im_list)
 
 sa = SiteAccess()
 
+by = Buyma()
+
 # 商品情報の入力
-sa.item_stock_change_button_click_for_buyma(bi)
+by.input_item_stock(bi)
 

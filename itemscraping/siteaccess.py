@@ -33,7 +33,7 @@ class SiteAccess():
         options = ChromeOptions()
 
         # ヘッドレスモードを有効にする（次の行をコメントアウトすると画面が表示される）。
-        options.add_argument('--headless')
+        # options.add_argument('--headless')
         options.add_argument('--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) '
                              'AppleWebKit/537.36 (KHTML, like Gecko) '
                              'Chrome/79.0.3945.88 Safari/537.36')
@@ -174,7 +174,7 @@ class SiteAccess():
         Buyma専用メソッド
         サイト内の特定の箇所に入力したいデータを入力する
         Args:
-            input_data (str):入力したいデータ
+            input_data (BuymaItem):入力したいデータ
         """
         logout.output_log_debug('商品情報の入力')
 

@@ -12,7 +12,7 @@ logger = getLogger('stock_info_transfer')
 # handler = logging.FileHandler('./log/stock_info_transfer.log')
 
 file_handler_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'log', 'stock_info_transfer.log')
-handler = file_handler_path
+handler = logging.FileHandler(file_handler_path)
 handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)8s %(message)s"))
 logger.addHandler(handler)
 

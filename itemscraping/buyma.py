@@ -223,7 +223,7 @@ class Buyma:
 
         return item_size_list
 
-    def input_item_stock(self, input_data):
+    def input_item_stock(self, input_data: BuymaItem):
         """
         出品商品一覧から在庫情報の入力を行う
         Returns:

@@ -177,6 +177,48 @@ class SiteAccess():
             input_data (BuymaItem):入力したいデータ
         """
         logout.output_log_debug('商品情報の入力')
+        # 編集ボタンクリック
+        editButton = self.DRIVER.find_element_by_xpath('//*[@data-vt="/vt/my/buyeritems/edit/colorsize/' + input_data.item_id + '"]')
+        editButton.click()
+
+        # 色情報取得
+        # 色情報ヘッダーの取得　
+        color_header = self.DRIVER.find_elements_by_xpath('//*[@id="my"]/div[10]/div[2]/div/div[1]/table/tbody/tr[1]/th')
+        # 色情報のリストを作成
+        color_list = color_header[[i for i in range(3,len(color_header))]]
+
+        # サイズ情報の取得
+        size_column = self.DRIVER.find_elements_by_xpath('//*[@id="my"]/div[10]/div[2]/div/div[1]/table/tbody/tr')
+        # サイズ情報のリストを作成
+        size_list = size_column[[i for i in range(len(size_column))][0]]
+
+        # 変更箇所の確定
+        # 引数に設定された商品の色とリスト内(color_list)の色が一致した箇所の保存
+        color_place_map = {}
+        for i, color in enumerate(color_list):
+            for item_info in input_data.item_info:
+                if item_info.color == color:
+                    color_place_map[color] = i
+
+        # 引数に設定された商品のサイズとリスト内(size_list)のサイズが一致した箇所の保存
+        size_place_map = {}
+        for i,size in enumerate(size_list):
+            for item_info in input_data.item_info:
+                if item_info.size == size:
+                    size_place_map[size] = size
+
+        # 商品入力用のオブジェクト取得(Selenium上で商品の有無のリストボックスを操作できるよう取得)
+        for item_info in input_data.item_info:
+            item_inventory_list_box = \
+                self.DRIVER.find_elements_by_xpath('//*[@id="my"]/div[10]/div[2]/div/div[1]/table/tbody/'
+                                               'tr[' + size_place_map[item_info.size] + ']/'
+                                               'td['+ color_place_map[item_info.color] +']/div/select/')
+
+        # ここで商品の各リストボックスを扱う
+        for item_inventory in item_inventory_list_box:
+            item_inventory.is_selected()
+
+
 
     def read(self):
         """

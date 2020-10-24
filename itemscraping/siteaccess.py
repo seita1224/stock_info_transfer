@@ -8,9 +8,13 @@ import time
 import traceback
 
 from selenium.webdriver import Chrome, ChromeOptions
+from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 import chromedriver_binary
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
 from itemscraping import sitesmeta
 import logout
 import re
@@ -179,29 +183,19 @@ class SiteAccess:
         logout.output_log_debug('商品情報の入力')
         # 編集ボタンクリック
         logout.output_log_debug(self, '編集ボタンのxpath: //*[@data-vt="/vt/my/buyeritems/edit/colorsize/' + input_data.item_id + '"]')
-        editButton = self.DRIVER.find_element_by_xpath('//*[@data-vt="/vt/my/buyeritems/edit/colorsize/' + input_data.item_id + '"]')
-        logout.output_log_debug(self, str(editButton))
-        editButton.click()
-
-        self.DRIVER.refresh()
+        chage_button = self.DRIVER.find_element_by_xpath('//*[@data-vt="/vt/my/buyeritems/edit/colorsize/' + input_data.item_id + '"]')
+        actions_open = ActionChains(self.DRIVER)
+        actions_open.move_to_element(to_element=chage_button)
+        actions_open.click(on_element=chage_button)
+        actions_open.perform()
 
         # 色情報取得
         # 色情報ヘッダーの取得　
         logout.output_log_debug(self, '色ヘッダーxpath: //*[@id="my"]/div[10]/div[2]/div/div[1]/table/tbody/tr[1]/th')
-        sorce = self.DRIVER.find_element_by_xpath('//*[@id="my"]')
-        sorce = sorce.find_elements_by_xpath('/div[10]')
-        logout.output_log_debug(self, sorce.text)
-
-        sorce = self.DRIVER.find_element_by_xpath('//*[@id="my"]/div[10]/div[2]/div/div[1]/table')
-        color_header = sorce.find_elements_by_xpath('.//th')
-
-        logout.output_log_debug(self, color_header)
-        logout.output_log_debug(self, '色ヘッダー取得内容:' + str(color_header))
-
-
+        color_header = self.DRIVER.find_element_by_xpath('//body[@id="my"]/div[8]/div[2]/div/div/table/tbody/tr/th[3]')
         # 色情報のリストを作成
-        logout.output_log_debug(self, '色ヘッダー取得内容:' + str(color_header))
-        color_list = [v for i, v in enumerate(color_header) if i >= 2 and v is not None]
+        color_list = [v.text for i, v in enumerate(color_header) if i >= 2 and v is not None]
+        logout.output_log_debug(self, '色ヘッダー取得内容:' + str(color_list))
 
         # サイズ情報の取得
         logout.output_log_debug(self, 'サイズカラムxpath: //*[@id="my"]/div[10]/div[2]/div/div[1]/table/tbody/tr')

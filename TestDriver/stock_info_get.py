@@ -2,7 +2,7 @@ from itemscraping import Buyma
 from itemscraping import Asos
 
 asos = Asos()
-stock_list = asos.item_stock_info('https://www.asos.com/collusion/collusion-x001-skinny-jeans-in-blue-mid-wash/prd/10286741/')
+stock_list = asos.get_item_stock('https://www.asos.com/collusion/collusion-x001-skinny-jeans-in-blue-mid-wash/prd/10286741/')
 print(stock_list)
 # del asos
 

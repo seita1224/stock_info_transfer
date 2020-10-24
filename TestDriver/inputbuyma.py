@@ -7,10 +7,9 @@ im.url = 'https://www.asos.com/nike/nike-mini-swoosh-oversized-hoodie-in-olive-g
 im.color = 'rose gold'
 im.size = 'X'
 
-im_list = []
-im_list.append(im)
+im_list = [im]
 
-bi = BuymaItem(item_id='0050270103',item_name='',item_info=im_list)
+bi = BuymaItem(item_id='50270103',item_name='',item_info=im_list)
 
 by = Buyma()
 

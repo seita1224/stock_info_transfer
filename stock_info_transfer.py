@@ -3,6 +3,8 @@ from csvparse import CsvParse
 import logout
 
 # 在庫情報取得用のオブジェクト初期化
+from models import BuymaItem, ItemMeta
+
 by = Buyma()
 csv_parse = CsvParse('./input_data/input_csv.csv')
 
@@ -52,8 +54,10 @@ item_id_transfer_target = []
 for item_id_for_shop in item_url_stock:
     for item_url in item_url_stock[item_id_for_shop]:
         try:
-            asos_item_size[item_id_for_shop] = asos.item_stock_info(item_url)
-            # CSV、buyma、仕入れ先の全てが一致した商品IDを在庫確認対象とする
+            # ASOS内でサイズが売り切れている商品情報の取得
+            asos_item_size[item_id_for_shop] = asos.get_item_not_found_stock(item_url)
+
+            # 売り切れている商品を対象にする処理を行うため商品IDの保管
             item_id_transfer_target.append(item_id_for_shop)
 
         except Exception as e:
@@ -63,21 +67,16 @@ for item_id_for_shop in item_url_stock:
 
 logout.output_log_info(class_obj=None, log_message='更新対象商品ID:' + str(item_id_transfer_target))
 
-"""
-    TODO: item_id_transfer_targetの商品IDを対象に商品の在庫の情報を更新をする
-          基本的ににはBuyma.pyから出てきたデータと、asos_item_sizeの内容を比較する
-          Asosから出てくるサイズ存在するものと存在しないものに分けるべきか？　→
-"""
-
-
-
-
-
-
-
-
-
-
+# 入力用商品情報の作成
+for item_id in item_id_transfer_target:
+    item_info = {}
+    for item_color in item_id_existence_color[item_id]:
+        # 在庫の存在しない商品の情報を作成する
+        for item_size in item_id_existence_size[item_id]:
+            item_info[item_id] = ItemMeta(color=item_color, size=item_size)
+    buyma_item = BuymaItem(item_id=item_id, item_name='', item_info=item_info.values())
+    # 在庫情報の入力
+    by.input_item_stock(buyma_item)
 
 
 

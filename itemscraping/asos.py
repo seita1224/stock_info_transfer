@@ -56,7 +56,6 @@ class Asos():
 
         return item_info_list
 
-
     def get_item_not_found_stock(self, item_url) -> list:
         """
         在庫の取得のデータの有無の取得
@@ -76,7 +75,7 @@ class Asos():
         item_info_list = []
 
         for item in item_stock_info:
-            if ' - Not available' not in item.text:
+            if ' - Not available' in item.text:
                 item_info_list.append(item.text)
 
         return item_info_list

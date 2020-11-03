@@ -182,8 +182,10 @@ class SiteAccess:
         """
         logout.output_log_debug('商品情報の入力')
         # 編集ボタンクリック
-        logout.output_log_debug(self, '編集ボタンのxpath: //*[@data-vt="/vt/my/buyeritems/edit/colorsize/' + input_data.item_id + '"]')
-        chage_button = self.DRIVER.find_element_by_xpath('//*[@data-vt="/vt/my/buyeritems/edit/colorsize/' + input_data.item_id + '"]')
+        logout.output_log_debug(self,
+                                '編集ボタンのxpath: //*[@data-vt="/vt/my/buyeritems/edit/colorsize/' + input_data.item_id + '"]')
+        chage_button = self.DRIVER.find_element_by_xpath(
+            '//*[@data-vt="/vt/my/buyeritems/edit/colorsize/' + input_data.item_id + '"]')
         actions_open = ActionChains(self.DRIVER)
         actions_open.move_to_element(to_element=chage_button)
         actions_open.click(on_element=chage_button)
@@ -191,19 +193,22 @@ class SiteAccess:
 
         # 色情報取得
         # 色情報ヘッダーの取得　
-        logout.output_log_debug(self, '色ヘッダーxpath: //*[@id="my"]/div[10]/div[2]/div/div[1]/table/tbody/tr[1]/th')
-        color_header = self.DRIVER.find_element_by_xpath('//body[@id="my"]/div[8]/div[2]/div/div/table/tbody/tr/th[3]')
+        logout.output_log_debug(self, '色ヘッダーxpath: //body[@id="my"]/div[8]/div[2]/div/div/table/tbody/tr/th')
+        color_header = self.DRIVER.find_elements_by_xpath('//body[@id="my"]/div[8]/div[2]/div/div/table/tbody/tr/th')
+
         # 色情報のリストを作成
         color_list = [v.text for i, v in enumerate(color_header) if i >= 2 and v is not None]
         logout.output_log_debug(self, '色ヘッダー取得内容:' + str(color_list))
 
         # サイズ情報の取得
         logout.output_log_debug(self, 'サイズカラムxpath: //*[@id="my"]/div[10]/div[2]/div/div[1]/table/tbody/tr')
-        size_column = self.DRIVER.find_elements_by_xpath('//*[@id="my"]/div[10]/div[2]/div/div[1]/table/tbody/tr')
+        size_column = self.DRIVER.find_element_by_xpath('//*[@id="my"]/div[10]/div[2]/div/div[1]/table/tbody/tr')
+        logout.output_log_debug(self, 'サイズカラム: ' + size_column.text)
+        logout.output_log_debug(self, 'サイズカラム: ' + str([v.text for v in size_column]))
 
         # サイズ情報のリストを作成
-        logout.output_log_debug(self, 'サイズカラム取得内容: ' + str(size_column))
-        size_list = size_column[[i for i in range(len(size_column))][0]]
+        size_list = [w for i, w in enumerate([v for v in size_column]) if i >= 2 and w is not None]
+        logout.output_log_debug(self, 'サイズカラム取得内容: ' + str(size_list))
 
         # 変更箇所の確定
         # 引数に設定された商品の色とリスト内(color_list)の色が一致した箇所の保存
@@ -215,7 +220,7 @@ class SiteAccess:
 
         # 引数に設定された商品のサイズとリスト内(size_list)のサイズが一致した箇所の保存
         size_place_map = {}
-        for i,size in enumerate(size_list):
+        for i, size in enumerate(size_list):
             for item_info in input_data.item_info:
                 if item_info.size == size:
                     size_place_map[size] = size
@@ -224,14 +229,12 @@ class SiteAccess:
         for item_info in input_data.item_info:
             item_inventory_list_box = \
                 self.DRIVER.find_elements_by_xpath('//*[@id="my"]/div[10]/div[2]/div/div[1]/table/tbody/'
-                                               'tr[' + size_place_map[item_info.size] + ']/'
-                                               'td['+ color_place_map[item_info.color] +']/div/select/')
+                                                   'tr[' + size_place_map[item_info.size] + ']/'
+                                                   'td[' + str(color_place_map[item_info.color]) + ']/div/select/')
 
         # ここで商品の各リストボックスを扱う
         for item_inventory in item_inventory_list_box:
             item_inventory.is_selected()
-
-
 
     def read(self):
         """

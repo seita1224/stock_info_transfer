@@ -5,7 +5,7 @@ im = ItemMeta()
 
 im.url = 'https://www.asos.com/nike/nike-mini-swoosh-oversized-hoodie-in-olive-green/prd/14878448?CTAref=We+Recommend+Carousel_3&featureref1=we+recommend+pers'
 im.color = 'rose gold'
-im.size = 'X'
+im.size = 'XS'
 
 im_list = [im]
 

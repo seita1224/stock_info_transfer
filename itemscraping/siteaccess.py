@@ -5,15 +5,11 @@ Todo:
 """
 
 import time
-import traceback
 
 from selenium.webdriver import Chrome, ChromeOptions
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 import chromedriver_binary
 from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+
 
 from itemscraping import sitesmeta
 import logout
@@ -183,7 +179,9 @@ class SiteAccess:
         logout.output_log_debug('商品情報の入力')
         # 編集ボタンクリック
         logout.output_log_debug(self,
-                                '編集ボタンのxpath: //*[@data-vt="/vt/my/buyeritems/edit/colorsize/' + input_data.item_id + '"]')
+                                '編集ボタンのxpath: //*[@data-vt="/vt/my/buyeritems/edit/colorsize/'
+                                + input_data.item_id + '"]')
+
         chage_button = self.DRIVER.find_element_by_xpath(
             '//*[@data-vt="/vt/my/buyeritems/edit/colorsize/' + input_data.item_id + '"]')
         actions_open = ActionChains(self.DRIVER)
@@ -202,35 +200,43 @@ class SiteAccess:
 
         # サイズ情報の取得
         logout.output_log_debug(self, 'サイズカラムxpath: //*[@id="my"]/div[10]/div[2]/div/div[1]/table/tbody/tr')
-        size_column = self.DRIVER.find_element_by_xpath('//*[@id="my"]/div[10]/div[2]/div/div[1]/table/tbody/tr')
-        logout.output_log_debug(self, 'サイズカラム: ' + size_column.text)
-        logout.output_log_debug(self, 'サイズカラム: ' + str([v.text for v in size_column]))
+        size_row = self.DRIVER.find_elements_by_xpath('//*[@id="my"]/div[8]/div[2]/div/div[1]/table/tbody/tr')
 
         # サイズ情報のリストを作成
-        size_list = [w for i, w in enumerate([v for v in size_column]) if i >= 2 and w is not None]
+        size_list = [w[0].text for i, w in enumerate([v.find_elements_by_tag_name('td') for v in size_row])
+                     if i >= 1 and w is not None]
         logout.output_log_debug(self, 'サイズカラム取得内容: ' + str(size_list))
+        # size_list = [x.find_elements_by_id('td')[0].text for x in size_list]
 
         # 変更箇所の確定
         # 引数に設定された商品の色とリスト内(color_list)の色が一致した箇所の保存
-        color_place_map = {}
-        for i, color in enumerate(color_list):
+        # 色情報をリスト内からの検索
+        color_place_dict = {}
+        for color_index, color in enumerate(color_list):
             for item_info in input_data.item_info:
                 if item_info.color == color:
-                    color_place_map[color] = i
+                    # 色の列数が「tr[2]」から色の列になる
+                    color_place_dict[color] = color_index + 2
+        logout.output_log_debug(self, '入力用インデックス色情報：' + str(color_place_dict))
 
         # 引数に設定された商品のサイズとリスト内(size_list)のサイズが一致した箇所の保存
         size_place_map = {}
-        for i, size in enumerate(size_list):
+        for size_index, size in enumerate(size_list):
             for item_info in input_data.item_info:
                 if item_info.size == size:
-                    size_place_map[size] = size
+                    # サイズの行数が「td[3]」からサイズの行になる
+                    size_place_map[size] = size_index + 3
+        logout.output_log_debug(self, '入力用インデックス色情報 :' + str(size_place_map))
 
         # 商品入力用のオブジェクト取得(Selenium上で商品の有無のリストボックスを操作できるよう取得)
+        item_inventory_list_box = []
         for item_info in input_data.item_info:
+            input_item_xpath = '//*[@id="my"]/div[10]/div[2]/div/div[1]/table/tbody/tr['\
+                               + str(size_place_map[item_info.size]) + ']/td['\
+                               + str(color_place_dict[item_info.color]) + ']/div/select'
             item_inventory_list_box = \
-                self.DRIVER.find_elements_by_xpath('//*[@id="my"]/div[10]/div[2]/div/div[1]/table/tbody/'
-                                                   'tr[' + size_place_map[item_info.size] + ']/'
-                                                   'td[' + str(color_place_map[item_info.color]) + ']/div/select/')
+                self.DRIVER.find_elements_by_xpath(input_item_xpath)
+            logout.output_log_debug(self, '入力用Xpath: ' + input_item_xpath)
 
         # ここで商品の各リストボックスを扱う
         for item_inventory in item_inventory_list_box:

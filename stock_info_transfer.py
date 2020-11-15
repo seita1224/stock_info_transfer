@@ -13,7 +13,10 @@ buyma_item_id_list = by.get_item_id_list()
 csv_item_id_list = csv_parse.get_item_id_list()
 
 # 在庫情報更新対象商品がbuyma上の商品と一致しているかの検証
+logout.output_log_debug(None, 'Buyma上の商品ID: ' + str(buyma_item_id_list))
+logout.output_log_debug(None, 'csv上の商品ID: ' + str(csv_item_id_list))
 item_id_stock_check = list(set(buyma_item_id_list) & set(csv_item_id_list))        # 在庫確認対象商品ID
+logout.output_log_debug(None, '入力された商品IDが入力されたもの: ' + str(item_id_stock_check))
 
 # 入力された商品の色情報→サイズの順番で情報が一致しているかの検証
 item_color_stock_check = dict()
@@ -30,12 +33,16 @@ for item_id in item_id_stock_check:
     csv_sizes = csv_parse.get_item_size_list_for_buyma(item_id=item_id)
     item_size_stock_check[item_id] = list(set(buyma_sizes) & set(csv_sizes))
 
+    logout.output_log_debug(None, '商品ID: ' + item_id)
+    logout.output_log_debug(None, '商品色: ' + str(item_color_stock_check[item_id]))
+    logout.output_log_debug(None, '商品サイズ: ' + str(item_size_stock_check[item_id]))
+
 # 色、サイズ共にBuyma,csvに存在する商品IDの割り出し
 item_id_existence_color = list(item_color_stock_check.keys())
 item_id_existence_size = list(item_size_stock_check.keys())
 item_id_buyma_csv_exists = list(set(item_id_existence_color) & set(item_id_existence_size))
 
-logout.output_log_info(class_obj=None, log_message='CSV、BUYMAの商品情報が一致した商品ID:' + str(item_id_buyma_csv_exists))
+logout.output_log_info(None, 'CSV、BUYMAの商品情報が一致した商品ID:' + str(item_id_buyma_csv_exists))
 
 # 仕入れ先URLの取得
 item_url_stock = dict()
@@ -45,6 +52,7 @@ for item_id in item_id_buyma_csv_exists:
             item_url_stock[item_id] = csv_parse.get_item_url_list_for_shop(item_id=item_id,
                                                                            color=str(item_color),
                                                                            size=str(item_size))
+logout.output_log_debug(None, '商品情報が全て一致している商品: ' + str(item_url_stock))
 
 # ASOS(仕入れ先)から商品の存在しているサイズの取得
 asos = Asos()
@@ -55,7 +63,7 @@ for item_id_for_shop in item_url_stock:
     for item_url in item_url_stock[item_id_for_shop]:
         try:
             # ASOS内でサイズが売り切れている商品情報の取得
-            asos_item_size[item_id_for_shop] = asos.get_item_not_found_stock(item_url)
+            asos_item_size[item_id_for_shop] = asos.get_item_nothing_stock(item_url)
 
             # 売り切れている商品を対象にする処理を行うため商品IDの保管
             item_id_transfer_target.append(item_id_for_shop)
@@ -74,9 +82,6 @@ for item_id in item_id_transfer_target:
         # 在庫の存在しない商品の情報を作成する
         for item_size in item_id_existence_size[item_id]:
             item_info[item_id] = ItemMeta(color=item_color, size=item_size)
-    buyma_item = BuymaItem(item_id=item_id, item_name='', item_info=item_info.values())
+    buyma_item = BuymaItem(item_id=item_id, item_name='', item_info=list(item_info.values()))
     # 在庫情報の入力
     by.input_item_stock(buyma_item)
-
-
-

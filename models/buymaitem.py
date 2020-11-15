@@ -1,5 +1,5 @@
 from models import ItemMeta
-from typing import Iterable
+from typing import Iterable, List
 
 
 class BuymaItem:
@@ -11,13 +11,10 @@ class BuymaItem:
 
         self.__item_id = item_id
         self.__item_name = item_name
-        self.__item_info: list[ItemMeta] = item_info
+        self.__item_info: List[ItemMeta] = item_info
 
     def __str__(self):
-        return '' \
-               '商品ID:' + self.__item_id + ' ' \
-               '商品名:' + self.__item_name + ' ' \
-               '' + str(self.__item_info[0])
+        return '商品ID:' + self.__item_id + '商品名:' + self.__item_name + str(self.__item_info[0])
 
     @property
     def item_id(self):

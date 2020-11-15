@@ -7,6 +7,8 @@ Todo:
 import traceback
 
 from bs4 import BeautifulSoup
+from typing import List
+
 from itemscraping.siteaccess import SiteAccess
 from itemscraping.sitesmeta import SitesMeta
 from models import ItemMeta, BuymaItem
@@ -29,7 +31,7 @@ class Buyma:
         self.meta = SitesMeta().get_site_meta('SellSite.Buyma')
         self.site_access = SiteAccess()
         self.site_access.login(site_meta='SellSite.Buyma')
-        self.__buyma_item_list: list[BuymaItem] = self.get_sell_item_stock()
+        self.__buyma_item_list: List[BuymaItem] = self.get_sell_item_stock()
 
     def get_sells_item_list(self) -> dict:
         """

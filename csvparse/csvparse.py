@@ -1,7 +1,7 @@
 import logout
 from models import CsvModel
 from models import ItemMeta
-from typing import Iterable
+from typing import Iterable, List
 
 
 class CsvParse:
@@ -13,7 +13,7 @@ class CsvParse:
     def __init__(self, file_path: str):
         self.__file_path = file_path
         self.__csv_text_lines = self.get_csv_text()
-        self.__csv_item_data: list[CsvModel] = self.create_csv_data()
+        self.__csv_item_data: List[CsvModel] = self.create_csv_data()
 
     def get_csv_text(self):
         """

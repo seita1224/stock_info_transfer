@@ -3,13 +3,12 @@
 Todo:
     サイト依存データをsitesmeta.pyから読み込む仕組みを組み込む
 """
-
 import time
 
 from selenium.webdriver import Chrome, ChromeOptions
 import chromedriver_binary
 from selenium.webdriver.common.action_chains import ActionChains
-
+from selenium.webdriver.support.select import Select
 
 from itemscraping import sitesmeta
 import logout
@@ -229,18 +228,23 @@ class SiteAccess:
         logout.output_log_debug(self, '入力用インデックス色情報 :' + str(size_place_map))
 
         # 商品入力用のオブジェクト取得(Selenium上で商品の有無のリストボックスを操作できるよう取得)
-        item_inventory_list_box = []
         for item_info in input_data.item_info:
-            input_item_xpath = '//*[@id="my"]/div[10]/div[2]/div/div[1]/table/tbody/tr['\
-                               + str(size_place_map[item_info.size]) + ']/td['\
-                               + str(color_place_dict[item_info.color]) + ']/div/select'
-            item_inventory_list_box = \
-                self.DRIVER.find_elements_by_xpath(input_item_xpath)
+            input_item_xpath = '//*[@id="my"]/div[8]/div[2]/div/div[1]/table/tbody/tr['\
+                               + str(color_place_dict[item_info.color]) + ']/td['\
+                               + str(size_place_map[item_info.size]) + ']/div/select'
+            item_inventory = self.DRIVER.find_element_by_xpath(input_item_xpath)
             logout.output_log_debug(self, '入力用Xpath: ' + input_item_xpath)
 
-        # ここで商品の各リストボックスを扱う
-        for item_inventory in item_inventory_list_box:
-            item_inventory.is_selected()
+            # ここで商品の各リストボックスを扱う
+            item_inventory.click()
+            item_inventory.find_element_by_xpath(input_item_xpath)
+            logout.output_log_debug(self, 'クリック先のテキスト: ' + item_inventory.text)
+            item_selected = Select(item_inventory)
+            item_selected.select_by_index(1)
+
+            # 商品情報確定ボタン
+            update_button = self.DRIVER.find_element_by_xpath('//*[@id="my"]/div[8]/div[2]/div/div[3]/a[2]')
+            update_button.click()
 
     def read(self):
         """

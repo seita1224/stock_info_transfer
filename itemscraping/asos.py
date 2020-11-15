@@ -7,12 +7,13 @@ Todo:
 """
 
 from bs4 import BeautifulSoup
+
+import logout
 from itemscraping.siteaccess import SiteAccess
 from itemscraping.sitesmeta import SitesMeta
 
 
-
-class Asos():
+class Asos:
     """
     asosのサイトの操作を行う用のクラス
     """
@@ -38,11 +39,14 @@ class Asos():
         Returns:
             list<str>: 商品の在庫一覧
         """
+        logout.output_log_debug(self, '仕入れ先のURL: ' + item_url)
+
         # URLからHTMLの取得
         bf = BeautifulSoup(self.site_access.script_compile(input_url=item_url), 'html.parser')
 
         # サイト上のサイズの内容を選択するためのCSSセレクター
         item_stock_meta = self.meta['ItemOfInfo']['ItemSizeList']['ItemSizeListCssSelector']
+        logout.output_log_debug(self, 'ASOSのサイズリスト: ' + str(item_stock_meta))
 
         # サイズの情報を取得する
         item_stock_info = bf.select(item_stock_meta[0])[0].find_all(item_stock_meta[1])
@@ -56,17 +60,20 @@ class Asos():
 
         return item_info_list
 
-    def get_item_not_found_stock(self, item_url) -> list:
+    def get_item_nothing_stock(self, item_url) -> list:
         """
         在庫の取得のデータの有無の取得
         Returns:
             list<str>: 商品の在庫一覧
         """
+        logout.output_log_debug(self, '仕入れ先のURL: ' + item_url)
+
         # URLからHTMLの取得
         bf = BeautifulSoup(self.site_access.script_compile(input_url=item_url), 'html.parser')
 
         # サイト上のサイズの内容を選択するためのCSSセレクター
         item_stock_meta = self.meta['ItemOfInfo']['ItemSizeList']['ItemSizeListCssSelector']
+        logout.output_log_debug(self, 'ASOSのサイズリスト: ' + str(item_stock_meta))
 
         # サイズの情報を取得する
         item_stock_info = bf.select(item_stock_meta[0])[0].find_all(item_stock_meta[1])

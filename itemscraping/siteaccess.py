@@ -4,7 +4,6 @@ Todo:
     サイト依存データをsitesmeta.pyから読み込む仕組みを組み込む
 """
 import time
-
 from selenium.webdriver import Chrome, ChromeOptions
 import chromedriver_binary
 from selenium.webdriver.common.action_chains import ActionChains
@@ -43,19 +42,26 @@ class SiteAccess:
         # 要素が見つかるまで繰り返し処理する時間
         self.DRIVER.implicitly_wait(10)
 
-    def script_compile(self, input_url=None):
+    def script_compile(self, input_url=None, obj=None):
         """
         javascriptコンパイル済みのhtmlを返します。
         汎用的なメソッドとして残しておく
         Args:
             input_url (str):HTMLの取得を行うサイトのURL
+            obj (object): 呼び出し元のオブジェクト
         Returns:
             Union[int, list[Union[int,str]]]:javascriptがコンパイルされたHTML基本的には文字列が返されるイメージで良い
         """
-        conf_url = input_url
-
         # インスタンスにて指定したサイトにアクセスする(アクセスしたタイミングでjavascriptがコンパイルされる)
-        self.DRIVER.get(conf_url)
+        self.DRIVER.get(input_url)
+
+        # Asosから呼び出された場合に稼働する
+        if obj.__class__.__name__ == 'Asos':
+            # Asosのサイトの使用上1回のアクセスのみだと商品ページに直接飛べないため1回目の遷移先が引数のURLと違っていた場合は2回アクセスする
+            if str(self.DRIVER.current_url) != input_url:
+                self.DRIVER.get(input_url)
+
+            self.DRIVER.find_element_by_id('main-size-select-0')
 
         # htmlを返す
         return self.DRIVER.page_source
@@ -179,10 +185,10 @@ class SiteAccess:
         # 編集ボタンクリック
         logout.output_log_debug(self,
                                 '編集ボタンのxpath: //*[@data-vt="/vt/my/buyeritems/edit/colorsize/'
-                                + input_data.item_id + '"]')
+                                + input_data.item_id_nothing_zero + '"]')
 
         chage_button = self.DRIVER.find_element_by_xpath(
-            '//*[@data-vt="/vt/my/buyeritems/edit/colorsize/' + input_data.item_id + '"]')
+            '//*[@data-vt="/vt/my/buyeritems/edit/colorsize/' + input_data.item_id_nothing_zero + '"]')
         actions_open = ActionChains(self.DRIVER)
         actions_open.move_to_element(to_element=chage_button)
         actions_open.click(on_element=chage_button)
@@ -224,7 +230,7 @@ class SiteAccess:
             for item_info in input_data.item_info:
                 if item_info.size == size:
                     # サイズの行数が「td[3]」からサイズの行になる
-                    size_place_map[size] = size_index + 3
+                    size_place_map[size] = size_index
         logout.output_log_debug(self, '入力用インデックス色情報 :' + str(size_place_map))
 
         # 商品入力用のオブジェクト取得(Selenium上で商品の有無のリストボックスを操作できるよう取得)

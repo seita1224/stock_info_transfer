@@ -78,10 +78,11 @@ logout.output_log_info(class_obj=None, log_message='更新対象商品ID:' + str
 # 入力用商品情報の作成
 for item_id in item_id_transfer_target:
     item_info = {}
-    for item_color in item_id_existence_color[item_id]:
+    for item_color in item_color_stock_check[item_id]:
         # 在庫の存在しない商品の情報を作成する
-        for item_size in item_id_existence_size[item_id]:
+        for item_size in item_size_stock_check[item_id]:
             item_info[item_id] = ItemMeta(color=item_color, size=item_size)
     buyma_item = BuymaItem(item_id=item_id, item_name='', item_info=list(item_info.values()))
+
     # 在庫情報の入力
     by.input_item_stock(buyma_item)

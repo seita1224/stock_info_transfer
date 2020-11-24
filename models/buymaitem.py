@@ -17,8 +17,12 @@ class BuymaItem:
         return '商品ID:' + self.__item_id + '商品名:' + self.__item_name + str(self.__item_info[0])
 
     @property
-    def item_id(self):
+    def item_id(self) -> str:
         return self.__item_id
+
+    @property
+    def item_id_nothing_zero(self) -> str:
+        return self.__item_id.lstrip('0')
 
     @item_id.setter
     def item_id(self, item_id):

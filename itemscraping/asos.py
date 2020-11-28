@@ -81,15 +81,26 @@ class Asos:
 
         logout.output_log_debug(self, 'ASOSにて検索できたサイズ: ' + str(item_info_list))
         return item_info_list
-    # todo: 商品が売り切れだった場合の処理を追加する
-    # def outstock_checker(self, bf: BeautifulSoup):
-    #     """
-    #     このメソッドはASOSのサイト上に商品全てが売り切れた際に出力されるメッセージを検出する
-    #
-    #     Returns:
-    #         bool: 商品全てが売り切れだった場合: True
-    #               それ以外                : False
-    #     """
-    #     outstock = bf.select_one('#oos-label > h3')
-    #     if outstock.get_text =
 
+    def is_out_stock_checker(self, item_url: str):
+        """
+        このメソッドはASOSのサイト上に商品全てが売り切れた際に出力されるメッセージを検出する
+
+        Param:
+            item_url(str): 検出対象のURL
+
+        Returns:
+            bool: 商品全てが売り切れだった場合: True
+                  それ以外                : False
+                  それ以外                : False
+        """
+        logout.output_log_debug(self, '仕入れ先のURL: ' + item_url)
+        # URLからHTMLの取得
+        bf = BeautifulSoup(self.site_access.script_compile(input_url=item_url, obj=self), 'html.parser')
+
+        item_info = bf.find('#main-size-select-0 > option')
+        if item_info is None:
+            logout.output_log_debug(self, '商品全てが売り切れ')
+            return True
+
+        return False

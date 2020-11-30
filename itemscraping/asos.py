@@ -43,6 +43,9 @@ class Asos:
         # URLからHTMLの取得
         bf = BeautifulSoup(self.site_access.script_compile(input_url=item_url, obj=self), 'html.parser')
 
+        # 在庫が全て無い場合
+        if self.is_out_stock(bf): return list()
+
         # サイズの情報を取得する
         item_stock_info = bf.select('#main-size-select-0 > option')
         logout.output_log_debug(self, '抽出サイズリスト:' + str(item_stock_info))
@@ -50,11 +53,11 @@ class Asos:
         # 商品のサイズリスト
         item_info_list = []
 
-        for item in item_stock_info:
+        for item in [size for i, size in enumerate(item_stock_info) if i != 0]:
             if ' - Not available' not in item.text:
                 item_info_list.append(item.text)
 
-        logout.output_log_debug(self, 'ASOSにて検索できたサイズ: ' + str(item_info_list))
+        logout.output_log_debug (self, 'ASOSにて検索できたサイズ: ' + str(item_info_list))
         return item_info_list
 
     def get_item_nothing_stock(self, item_url) -> list:
@@ -82,7 +85,7 @@ class Asos:
         logout.output_log_debug(self, 'ASOSにて検索できたサイズ: ' + str(item_info_list))
         return item_info_list
 
-    def is_out_stock_checker(self, item_url: str):
+    def is_out_stock(self, bf: BeautifulSoup) -> bool:
         """
         このメソッドはASOSのサイト上に商品全てが売り切れた際に出力されるメッセージを検出する
 
@@ -90,17 +93,13 @@ class Asos:
             item_url(str): 検出対象のURL
 
         Returns:
-            bool: 商品全てが売り切れだった場合: True
-                  それ以外                : False
-                  それ以外                : False
-        """
-        logout.output_log_debug(self, '仕入れ先のURL: ' + item_url)
-        # URLからHTMLの取得
-        bf = BeautifulSoup(self.site_access.script_compile(input_url=item_url, obj=self), 'html.parser')
+            bool: 商品が存在する場合        : True
+                　商品全てが売り切れだった場合: False
 
+        """
         item_info = bf.find('#main-size-select-0 > option')
         if item_info is None:
             logout.output_log_debug(self, '商品全てが売り切れ')
-            return True
+            return False
 
-        return False
+        return True

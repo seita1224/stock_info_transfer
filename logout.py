@@ -24,5 +24,7 @@ def output_log_warning(class_obj=None, log_message='EmptyMessage'):
     logger.warning(class_obj.__class__.__name__ + ':' + log_message)
 
 
-def output_log_error(class_obj=None, log_message='EmptyMessage'):
+def output_log_error(class_obj=None, log_message='EmptyMessage', err=None):
     logger.error(class_obj.__class__.__name__ + ':' + log_message)
+    if err is None: raise Exception('ログに正しい情報を設定してください。')
+    logger.exception(err)

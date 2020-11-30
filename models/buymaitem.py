@@ -33,5 +33,9 @@ class BuymaItem:
         return self.__item_info
 
     @item_info.setter
-    def item_info(self, item_info: ItemMeta):
-        self.__item_info.append(item_info)
+    def item_info(self, item_info):
+        if isinstance(item_info, ItemMeta):
+            self.__item_info.append(item_info)
+        elif isinstance(item_info, list):
+            for info in item_info:
+                self.__item_info.append(info)

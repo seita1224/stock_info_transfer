@@ -15,9 +15,10 @@ from models import ItemMeta, BuymaItem
 import logout
 import re
 
+from util.exception import ItemIdException
+
 
 class Buyma:
-
     # サイトアクセス用オブジェクト
     site_access = None
 
@@ -49,12 +50,17 @@ class Buyma:
 
             # 商品名と商品IDを取得し、辞書型に変換する
             # 商品ID
-            item_id_list = bf.find_all(attrs={item_list_meta['ItemId']['ClassKey']:re.compile(item_list_meta['ItemId']['ClassData'])})
-            logout.output_log_debug(self, '商品ID取得箇所:' + item_list_meta['ItemId']['ClassKey'] + item_list_meta['ItemId']['ClassData'])
+            item_id_list = bf.find_all(
+                attrs={item_list_meta['ItemId']['ClassKey']: re.compile(item_list_meta['ItemId']['ClassData'])})
+            logout.output_log_debug(self, '商品ID取得箇所:' + item_list_meta['ItemId']['ClassKey'] + item_list_meta['ItemId'][
+                'ClassData'])
 
             # 商品名
-            item_name_list = bf.find_all(attrs={item_list_meta['ItemName']['ClassKey']:re.compile(item_list_meta['ItemName']['ClassData'])})
-            logout.output_log_debug(self, '商品名取得箇所:' + item_list_meta['ItemName']['ClassKey'] + item_list_meta['ItemName']['ClassData'])
+            item_name_list = bf.find_all(
+                attrs={item_list_meta['ItemName']['ClassKey']: re.compile(item_list_meta['ItemName']['ClassData'])})
+            logout.output_log_debug(self,
+                                    '商品名取得箇所:' + item_list_meta['ItemName']['ClassKey'] + item_list_meta['ItemName'][
+                                        'ClassData'])
 
             logout.output_log_debug(self, '取得データ：' + str(item_id_list))
             logout.output_log_debug(self, '取得データ：' + str(item_name_list))
@@ -81,7 +87,6 @@ class Buyma:
         Returns:
             list: 商品ごとの現在色、サイズ、在庫の有無
         """
-
         try:
             item_stock_meta = self.meta['ItemOfInfo']['ItemStockInfo']
 
@@ -179,8 +184,6 @@ class Buyma:
             return buyma_item_list
 
         except Exception:
-            logout.output_log_error(self, '商品の在庫状況データの取得が失敗しました。')
-            logout.output_log_error(self, traceback.format_exc())
             raise Exception('Buymaの出品リスト商品の在庫状況データの取得が失敗しました。')
 
     def get_item_id_list(self) -> list:
@@ -230,4 +233,7 @@ class Buyma:
         出品商品一覧から在庫情報の入力を行う
         Returns:
         """
-        self.site_access.input_item_stock_for_buyma(input_data)
+        try:
+            self.site_access.input_item_stock_for_buyma(input_data)
+        except ItemIdException as err:
+            raise err

@@ -165,7 +165,7 @@ class CsvParse:
 
         return item_color_list
 
-    def get_item_url_list_for_shop(self, item_id: str, color: str, size: str) -> Iterable[str]:
+    def get_item_url_list_for_shop(self, item_id: str, color: str, size: str) -> str:
         """
         商品URLのリストを返す
         Args:
@@ -173,19 +173,14 @@ class CsvParse:
             color: 色
             size: サイズ(仕入れ先)
         Returns:
-            list: 商品URLリスト
+            str: 商品URL
         """
-        # 商品サイズリスト
-        item_url_list = []
-
         # 引数の商品IDのサイズを抽出
         for item in self.__csv_item_data:
             if item.item_id == item_id:
                 for item_meta in item.item_shop:
                     if item_meta.color == color and item_meta.size == size:
-                        item_url_list.append(item_meta.url)
-
-        return item_url_list
+                        return item_meta.url
 
     def clear_text(self, clear_text: str):
         return clear_text.strip('\n')

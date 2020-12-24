@@ -210,6 +210,9 @@ class SiteAccess:
                 actions_open.click(on_element=change_button)
                 actions_open.perform()
 
+                # 商品の買い付けできる合計数量を変更する
+                self.change_item_num()
+
                 # 色情報取得
                 # 色情報ヘッダーの取得　
                 logout.output_log_debug(self, '色ヘッダーxpath: //body[@id="my"]/div[8]/div[2]/div/div/table/tbody/tr/th')
@@ -333,3 +336,12 @@ class SiteAccess:
         """
         self.DRIVER.find_element_by_xpath('//*[@id="row-count-options"]').click()
         self.DRIVER.find_element_by_xpath('//*[@id="row-count-options"]/option[3]').click()
+
+    def change_item_num(self):
+        """
+        入力した商品に対して数量をデフォルトで設定する
+        """
+        item_num = self.DRIVER.find_elements_by_xpath('//*[@id="my"]/div[8]/div[2]/div/div[2]/div/div[1]/span/input[1]')
+        for num in item_num:
+            num.clear()
+            num.send_keys('10')

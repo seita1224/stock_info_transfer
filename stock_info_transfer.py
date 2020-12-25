@@ -61,22 +61,21 @@ for item_id in item_id_buyma_csv_exists:
             if url is None: continue
             try:
                 # ASOS内に存在している商品サイズを取得
-                asos_item_exists_size[item_id] = asos.get_item_stock(url)
-                # 商品の在庫がない商品(ASOSから商品サイズが取得できなかったもの)
-                asos_item_not_exists_size[item_id] = list(set(item_size_stock_check[item_id]) ^
+                asos_item_exists_size[item_id] = list(set(item_size_stock_check[item_id]) & set(asos.get_item_stock(url)))
+                # 商品の在庫がない商品(ASOSから商品サイズが取得できなかったものかつCSVに商品が存在しているもの)
+                asos_item_not_exists_size[item_id] = list(set(item_size_stock_check[item_id]) &
+                                                          set(item_size_stock_check[item_id]) ^
                                                           set(asos_item_exists_size[item_id]))
 
                 # ASOSから商品サイズが取得できた商品IDを入力対象商品として保管しておく
                 target_input_itme_id.add(item_id)
 
             except Exception as err:
-                # TODO: 例外処理が起こった時他の対応でエラーを知らせる
                 logout.output_log_error(class_obj=None, log_message='仕入れ先商品情報取得エラー商品ID:' + str(item_id), err=err)
                 raise err
 
 # 入力用商品情報の作成
 for item_id in target_input_itme_id:
-    # todo:サイズ、色の情報がCSVの形と揃うように処理を書き換える
     item_info_exists_list = []
     item_info_not_exists_list = []
     for item_color in item_color_stock_check[item_id]:

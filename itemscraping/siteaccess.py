@@ -61,6 +61,8 @@ class SiteAccess:
             # Asosのサイトの仕様上1回のアクセスのみだと商品ページに直接飛べないため1回目の遷移先が引数のURLと違っていた場合は2回アクセスする
             if str(self.DRIVER.current_url) != input_url:
                 self.DRIVER.get(input_url)
+                # 読み込みがうまくいかない場合があるため一度リフレッシュする
+                self.DRIVER.refresh()
 
             time.sleep(2)
 

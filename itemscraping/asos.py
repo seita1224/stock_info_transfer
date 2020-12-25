@@ -1,9 +1,6 @@
 """
 Asosのサイトの操作を行う用のクラス
 このクラスを使用しAsosについては操作を行う
-Todo:
-    このクラスは抽象化対象
-    ソースを書き込む
 """
 
 from bs4 import BeautifulSoup
@@ -57,7 +54,7 @@ class Asos:
             if ' - Not available' not in item.text:
                 item_info_list.append(item.text)
 
-        logout.output_log_debug (self, 'ASOSにて検索できたサイズ: ' + str(item_info_list))
+        logout.output_log_debug(self, 'ASOSにて検索できたサイズ: ' + str(item_info_list))
         return item_info_list
 
     def get_item_nothing_stock(self, item_url) -> list:

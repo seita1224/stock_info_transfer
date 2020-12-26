@@ -1,7 +1,7 @@
 import logout
 from models import CsvModel
 from models import ItemMeta
-from typing import Iterable, List
+from typing import List
 
 
 class CsvParse:
@@ -93,11 +93,12 @@ class CsvParse:
 
         return item_id_list
 
-    def get_item_size_list_for_buyma(self, item_id) -> list:
+    def get_item_size_list_for_buyma(self, item_id: str, item_color: str) -> list:
         """
         商品サイズのリストを返す(buyma)
         Args:
             item_id: 商品ID
+            item_color: 色
         Returns:
             list: 商品サイズリスト
         """
@@ -106,12 +107,14 @@ class CsvParse:
 
         # 引数の商品IDのサイズを抽出
         for item in self.__csv_item_data:
-            if item.item_id == item_id:
-                item_size_list = [item.item_buyma[i].size for i in range(len(item.item_buyma))]
+            if item.item_id != item_id:
+                continue
+            item_size_list = [item.item_buyma[i].size for i in range(len(item.item_buyma)) if
+                              item_color == item.item_buyma[i].color]
 
         return item_size_list
 
-    def get_item_color_list_for_buyma(self, item_id) -> list:
+    def get_item_color_list_for_buyma(self, item_id: str) -> list:
         """
         商品色のリストを返す(buyma)
         Args:

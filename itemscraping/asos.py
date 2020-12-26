@@ -68,6 +68,9 @@ class Asos:
         # URLからHTMLの取得
         bf = BeautifulSoup(self.site_access.script_compile(input_url=item_url, obj=self), 'html.parser')
 
+        # 在庫が全て無い場合
+        if self.is_out_stock(bf): return list()
+
         # サイズの情報を取得する
         item_stock_info = bf.select('#main-size-select-0 > option')
         logout.output_log_debug(self, '抽出サイズリスト:' + str(item_stock_info))
@@ -100,3 +103,9 @@ class Asos:
             return False
 
         return True
+
+    def close(self):
+        """
+        ブラウザの終了
+        """
+        self.site_access.exit()

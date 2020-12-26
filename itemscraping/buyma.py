@@ -213,7 +213,7 @@ class Buyma:
 
         return item_color_list
 
-    def get_item_size_list(self, item_id: str) -> list:
+    def get_item_size_list(self, item_id: str, item_color: str) -> list:
         """
         Buymaにて販売中の特定の商品IDのサイズを全て取得する
         Returns:
@@ -224,16 +224,22 @@ class Buyma:
         for buyma_item in self.__buyma_item_list:
             if buyma_item.item_id == item_id:
                 for item_info in buyma_item.item_info:
-                    item_size_list.append(item_info.size)
+                    if item_info.color == item_color:
+                        item_size_list.append(item_info.size)
 
         return item_size_list
 
     def input_item_stock(self, input_data: BuymaItem):
         """
         出品商品一覧から在庫情報の入力を行う
-        Returns:
         """
         try:
             self.site_access.input_item_stock_for_buyma(input_data)
         except ItemIdException as err:
             raise err
+
+    def close(self):
+        """
+        ブラウザの終了
+        """
+        self.site_access.exit()

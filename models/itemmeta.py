@@ -7,7 +7,7 @@ class ItemMeta:
         self.__url = url
 
     def __str__(self):
-        return '色:' + self.__color + ' サイズ:' + self.__size + '  商品在庫状況:' + str(self.__existence)
+        return '色:' + self.__color + ' サイズ:' + self.__size + ' 商品在庫状況:' + str(self.__existence)
 
     @property
     def color(self) -> str:

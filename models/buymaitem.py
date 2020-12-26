@@ -14,7 +14,7 @@ class BuymaItem:
         self.__item_info: List[ItemMeta] = item_info
 
     def __str__(self):
-        return '商品ID:' + self.__item_id + '商品名:' + self.__item_name + str(self.__item_info[0])
+        return '商品ID:' + self.__item_id + ' 商品名: ' + self.__item_name + ' 商品情報: ' + str([str(v) for v in self.__item_info])
 
     @property
     def item_id(self) -> str:

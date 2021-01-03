@@ -19,7 +19,7 @@ csv_item_id_list = csv_parse.get_item_id_list()
 logout.output_log_debug(None, 'Buyma上の商品ID: ' + str(buyma_item_id_list))
 logout.output_log_debug(None, 'csv上の商品ID: ' + str(csv_item_id_list))
 item_id_stock_check = list(set(buyma_item_id_list) & set(csv_item_id_list))        # 在庫確認対象商品ID
-logout.output_log_debug(None, '入力された商品IDが入力されたもの: ' + str(item_id_stock_check))
+logout.output_log_debug(None, 'Buyma、CSVどちらにも存在したもの: ' + str(item_id_stock_check))
 
 # 入力された商品の色情報→サイズの順番で情報が一致しているかの検証
 item_color_stock_check = dict()

@@ -1,2 +1,4 @@
-from .asos import *
-from .buyma import *
+from .asos import Asos
+from .buyma import Buyma
+from .siteaccess import SiteAccess
+from .sitesmeta import SitesMeta

@@ -184,8 +184,10 @@ class Buyma:
 
             return buyma_item_list
 
-        except Exception:
-            raise Exception('Buymaの出品リスト商品の在庫状況データの取得が失敗しました。')
+        except Exception as e:
+            message = 'Buymaの出品リスト商品の在庫状況データの取得が失敗しました。'
+            logout.output_log_error(self, log_message=message, err=e)
+            raise Exception(message)
 
     def get_item_id_list(self) -> list:
         """

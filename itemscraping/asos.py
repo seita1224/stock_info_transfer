@@ -7,7 +7,6 @@ from bs4 import BeautifulSoup
 
 import logout
 from itemscraping.siteaccess import SiteAccess
-from itemscraping.sitesmeta import SitesMeta
 
 
 class Asos:
@@ -97,7 +96,7 @@ class Asos:
                 　商品全てが売り切れだった場合: False
 
         """
-        item_info = bf.find('#main-size-select-0 > option')
+        item_info = bf.select('#main-size-select-0 > option')
         if item_info is None:
             logout.output_log_debug(self, '商品全てが売り切れ')
             return False

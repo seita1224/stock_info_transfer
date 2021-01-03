@@ -57,6 +57,7 @@ for item_id in item_buyma_csv_exists.keys():
         url = csv_parse.get_item_url_list_for_shop(item_id=item_id,
                                                    color=item_meta.color,
                                                    size=item_meta.size)
+
         # URLが空の場合はCSVデータの中に色とサイズの組み合わせがない場合
         if url is None: continue
         try:
@@ -90,6 +91,9 @@ for item_id in item_buyma_csv_exists.keys():
     # 在庫情報の入力
     logout.output_log_info(class_obj=None, log_message='入力対象商品: ' + str(buyma_item))
     by.input_item_stock(buyma_item)
+
+# 商品在庫が全てない商品をCSV化する
+by.output_csv_nothing_stock()
 
 by.close()
 asos.close()

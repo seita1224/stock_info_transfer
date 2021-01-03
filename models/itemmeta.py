@@ -1,5 +1,7 @@
-class ItemMeta:
+from __future__ import annotations
 
+
+class ItemMeta:
     def __init__(self, color='', size='', existence=False, url=''):
         self.__color = color
         self.__size = size
@@ -8,6 +10,12 @@ class ItemMeta:
 
     def __str__(self):
         return '色:' + self.__color + ' サイズ:' + self.__size + ' 商品在庫状況:' + str(self.__existence)
+
+    def __eq__(self, item_meta: __class__) -> bool:
+        if self.size == item_meta.size and self.color == item_meta.color:
+            return True
+        else:
+            return False
 
     @property
     def color(self) -> str:

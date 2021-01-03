@@ -4,6 +4,7 @@ Buymaのサイトの操作を行う用のクラス
 Todo:
     このクラスは抽象化対象
 """
+import pandas as pd
 import traceback
 
 from bs4 import BeautifulSoup
@@ -232,9 +233,12 @@ class Buyma:
     def input_item_stock(self, input_data: BuymaItem):
         """
         出品商品一覧から在庫情報の入力を行う
+         Args:
+             input_data(BuymaItem): 在庫情報を入力する商品
         """
         try:
             self.site_access.input_item_stock_for_buyma(input_data)
+            self.update_item_info(input_data)
         except ItemIdException as err:
             raise err
 
@@ -243,3 +247,71 @@ class Buyma:
         ブラウザの終了
         """
         self.site_access.exit()
+
+    def update_item_info(self, buyma_item_for_update: BuymaItem):
+        """
+        商品情報を更新する
+        Args:
+            buyma_item_for_update(BuymaItem): 更新するBuyma上の商品
+        """
+        for buyma_item in self.__buyma_item_list:
+            if buyma_item == buyma_item_for_update:
+                for i, item_info in enumerate(buyma_item.item_info):
+                    if item_info == buyma_item_for_update.item_info:
+                        item_info[i] = buyma_item_for_update.item_info
+
+    def check_item_stock_nothing(self) -> List:
+        """
+        Buyma上の商品が全て売り切れまたは在庫が1つでも存在する場合は出品の停止、復活をさせるため
+        商品在庫が全て売り切れかどうか判定する
+        Return:
+            list: 商品ID,存在確認フラグの２次元配列(True 商品が一つでも存在しているもの, False 商品が全て存在しない商品)
+        """
+        item_id_list = list()
+        exists_list = list()
+
+        for buyma_item in self.__buyma_item_list:
+            item_id_list.append(buyma_item.item_id)
+            # 全ての商品に対して在庫が1つでも存在するか判定する
+            exists_list.append(any([exists.existence for exists in buyma_item.item_info]))
+
+        stock_exists_list = [item_id_list, exists_list]
+
+        return stock_exists_list
+
+    def output_csv_nothing_stock(self):
+        """
+        商品が全て売り切れているものをCSVに出力する
+        Returns:
+            List(str): 売り切れている商品ID
+        """
+        item_stock_list = self.check_item_stock_nothing()
+
+        # 商品が存在しないものをCSV出力する
+        df = pd.DataFrame({'item_id': item_stock_list[0],
+                           'item_exists': item_stock_list[1]})
+        data_len = len(df[df.item_exists == False])
+        if data_len > 0:
+            df[df.item_exists == False].to_csv('output_data/stock_nothing_item.csv', index=False)
+        else:
+            logout.output_log_info(self, '在庫全てが存在しない商品がありませんでした。')
+
+        item_id_stock_nothing = list()
+
+        for item_id in item_stock_list:
+            if item_id:
+                item_id_stock_nothing.append(item_id)
+
+        return item_stock_list
+
+    @property
+    def buyma_item_list(self) -> List[BuymaItem]:
+        return self.__buyma_item_list
+
+    @buyma_item_list.setter
+    def buyma_item_list(self, buyma_item):
+        if isinstance(buyma_item, BuymaItem):
+            self.__buyma_item_list.append(buyma_item)
+        elif isinstance(buyma_item, list):
+            if all(isinstance(item, BuymaItem) for item in buyma_item):
+                self.__buyma_item_list = buyma_item

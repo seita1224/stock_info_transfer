@@ -346,5 +346,7 @@ class SiteAccess:
         """
         item_num = self.DRIVER.find_elements_by_xpath('//*[@id="my"]/div[8]/div[2]/div/div[2]/div/div[1]/span/input[1]')
         for num in item_num:
-            num.clear()
-            num.send_keys('10')
+            # 数量入力時に全ての商品が在庫なしになっている場合、テキストボックスが非活性になっているため入力をしない
+            if num.is_enabled():
+                num.clear()
+                num.send_keys('10')

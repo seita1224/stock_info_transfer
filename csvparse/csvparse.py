@@ -21,7 +21,7 @@ class CsvParse:
             str: 解析を行うCSVのテキスト情報
         """
         try:
-            with open(self.__file_path, mode='r') as f:
+            with open(self.__file_path, mode='r',encoding='utf-8') as f:
                 return f.readlines()
 
         except IOError as e:

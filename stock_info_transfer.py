@@ -19,7 +19,7 @@ csv_item_id_list = csv_parse.get_item_id_list()
 logout.output_log_debug(None, 'Buyma上の商品ID: ' + str(buyma_item_id_list))
 logout.output_log_debug(None, 'csv上の商品ID: ' + str(csv_item_id_list))
 item_id_stock_check = list(set(buyma_item_id_list) & set(csv_item_id_list))        # 在庫確認対象商品ID
-logout.output_log_debug(None, '入力された商品IDが入力されたもの: ' + str(item_id_stock_check))
+logout.output_log_debug(None, 'Buyma、CSVどちらにも存在したもの: ' + str(item_id_stock_check))
 
 # 入力された商品の色情報→サイズの順番で情報が一致しているかの検証
 item_color_stock_check = dict()
@@ -57,6 +57,7 @@ for item_id in item_buyma_csv_exists.keys():
         url = csv_parse.get_item_url_list_for_shop(item_id=item_id,
                                                    color=item_meta.color,
                                                    size=item_meta.size)
+
         # URLが空の場合はCSVデータの中に色とサイズの組み合わせがない場合
         if url is None: continue
         try:
@@ -90,6 +91,9 @@ for item_id in item_buyma_csv_exists.keys():
     # 在庫情報の入力
     logout.output_log_info(class_obj=None, log_message='入力対象商品: ' + str(buyma_item))
     by.input_item_stock(buyma_item)
+
+# 商品在庫が全てない商品をCSV化する
+by.output_csv_nothing_stock()
 
 by.close()
 asos.close()

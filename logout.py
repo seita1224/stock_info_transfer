@@ -4,12 +4,16 @@ Todo:
     例外処理時のメッセージをより簡単に表示できるようにする
 """
 import logging
-from logging import getLogger
+from logging import getLogger, DEBUG
 import os
 
 file_name = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'log', 'stock_info_transfer.log')
-logging.basicConfig(level=logging.DEBUG, filename=file_name, format="%(asctime)s %(levelname)8s %(message)s")
 logger = getLogger('stock_info_transfer')
+handler = logging.FileHandler(filename=file_name)
+handler.setLevel(DEBUG)
+handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)8s %(message)s"))
+logger.setLevel(DEBUG)
+logger.addHandler(handler)
 
 
 def output_log_info(class_obj=None, log_message='EmptyMessage'):

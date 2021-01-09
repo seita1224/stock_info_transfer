@@ -4,17 +4,21 @@ Todo:
     サイト依存データをsitesmeta.pyから読み込む仕組みを組み込む
 """
 import time
+
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver import Chrome, ChromeOptions
 import chromedriver_binary
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.select import Select
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 
 from itemscraping import sitesmeta
 import logout
 import re
 
 from models import BuymaItem
-from util.exception import ItemIdException
 
 
 class SiteAccess:
@@ -23,6 +27,15 @@ class SiteAccess:
     """
     # ブラウザの保存
     DRIVER = None
+
+    # サイトアクセス処理リトライ回数
+    __RETRIES = 3
+
+    # 接続処理のタイムアウト時間
+    __TIMEOUT_VERY_SHOT = 3
+    __TIMEOUT_SHOT = 5
+    __TIMEOUT_MIDDLE = 10
+    __TIMEOUT_LONG = 20
 
     def __init__(self):
         """
@@ -40,8 +53,17 @@ class SiteAccess:
         # ChromeのWebDriverオブジェクトを作成する。
         self.DRIVER = Chrome(options=options)
 
-        # 要素が見つかるまで繰り返し処理する時間
-        self.DRIVER.implicitly_wait(10)
+        # ウィンドウの最大化
+        self.DRIVER.maximize_window()
+
+        # 要素が見つかるまで繰り返し処理する時間(second)
+        self.DRIVER.implicitly_wait(self.__TIMEOUT_VERY_SHOT)
+
+        # ページの読み込みが完了するまでの待機時間(second)
+        self.DRIVER.set_page_load_timeout(self.__TIMEOUT_LONG)
+
+        # ページのjavascriptが実行し終わるまでの待機時間(second)
+        self.DRIVER.set_script_timeout(self.__TIMEOUT_LONG)
 
     def script_compile(self, input_url=None, obj=None):
         """
@@ -53,19 +75,62 @@ class SiteAccess:
         Returns:
             Union[int, list[Union[int,str]]]:javascriptがコンパイルされたHTML基本的には文字列が返されるイメージで良い
         """
-        # インスタンスにて指定したサイトにアクセスする(アクセスしたタイミングでjavascriptがコンパイルされる)
-        self.DRIVER.get(input_url)
-
         # Asosから呼び出された場合に稼働する
         if obj.__class__.__name__ == 'Asos':
-            # Asosのサイトの仕様上1回のアクセスのみだと商品ページに直接飛べないため1回目の遷移先が引数のURLと違っていた場合は2回アクセスする
-            if str(self.DRIVER.current_url) != input_url:
-                self.DRIVER.get(input_url)
-                time.sleep(1)
-                # 読み込みがうまくいかない場合があるため一度リフレッシュする
-                self.DRIVER.get(input_url)
+            # ASOSの商品ページに飛ぶ前に一度トップページにアクセスする(サイトの仕様上直接商品ページへ飛べない仕様になっている)
+            self.DRIVER.get('https://www.asos.com/')
 
-            time.sleep(2)
+            time.sleep(self.__TIMEOUT_VERY_SHOT)
+
+            # アクセスが失敗した場合にリトライを行う
+            retry = 0
+            error = None
+            while retry < self.__RETRIES:
+                try:
+                    logout.output_log_info(self, 'Asos商品ページアクセス処理開始')
+
+                    # 商品ページへアクセス
+                    self.DRIVER.get(input_url)
+
+                    # 商品情報が読み込まれるまで待機
+                    WebDriverWait(self.DRIVER, self.__TIMEOUT_VERY_SHOT).until(EC.visibility_of_all_elements_located)
+                    time.sleep(self.__TIMEOUT_VERY_SHOT)
+
+                except TimeoutException as te:
+                    retry += 1
+                    logout.output_log_warning(self, 'Asos商品ページアクセス処理失敗　再実行します')
+                    error = te
+                    # 商品ページへアクセス
+                    self.DRIVER.get(input_url)
+                    WebDriverWait(self.DRIVER, self.__TIMEOUT_MIDDLE).until(EC.visibility_of_all_elements_located)
+                    continue
+                else:
+                    logout.output_log_info(self, 'Asos商品ページアクセス処理成功')
+                    break
+            else:
+                logout.output_log_warning(self, log_message='Asos商品ページアクセス処理失敗: 商品が売り切れている可能性があります')
+                logout.output_log_error(self, log_message='エラーの内容', err=error)
+        else:
+            # アクセスが失敗した場合にリトライを行う
+            retry = 0
+            error = None
+            while retry < self.__RETRIES:
+                try:
+                    # インスタンスにて指定したサイトにアクセスする(アクセスしたタイミングでjavascriptがコンパイルされる)
+                    self.DRIVER.get(input_url)
+                except TimeoutException as te:
+                    retry += 1
+                    error = te
+
+                    # インスタンスにて指定したサイトにアクセスする(アクセスしたタイミングでjavascriptがコンパイルされる)
+                    self.DRIVER.get(input_url)
+                    WebDriverWait(self.DRIVER, self.__TIMEOUT_MIDDLE).until(EC.visibility_of_all_elements_located)
+                    continue
+                else:
+                    logout.output_log_info(self, 'Asos商品ページアクセス処理成功')
+                    break
+            else:
+                logout.output_log_error(self, log_message='エラーの内容', err=error)
 
         # htmlを返す
         return self.DRIVER.page_source
@@ -120,61 +185,109 @@ class SiteAccess:
         except Exception as e:
             raise e
 
-        # ログイン先にアクセス
-        self.DRIVER.get(login_url)
+        # アクセスが失敗した場合にリトライを行う
+        retry = 0
+        error = None
+        while retry < self.__RETRIES:
+            try:
+                logout.output_log_info(self, 'Buymaログイン処理開始')
+                # ログイン先にアクセス
+                self.DRIVER.get(login_url)
 
-        # ID、PWの場所を指定して入力
-        site_id = self.DRIVER.find_element_by_css_selector(id_css_selector)
-        site_id.send_keys(site_user_id)
-        site_pw = self.DRIVER.find_element_by_css_selector(pw_css_selector)
-        site_pw.send_keys(site_user_pw)
+                # ID、PWの場所を指定して入力
+                site_id = WebDriverWait(self.DRIVER, self.__TIMEOUT_VERY_SHOT).until(
+                    EC.visibility_of_element_located((By.CSS_SELECTOR, id_css_selector))
+                )
+                site_id.send_keys(site_user_id)
 
-        # 入力待ち
-        time.sleep(1)
+                site_pw = WebDriverWait(self.DRIVER, self.__TIMEOUT_VERY_SHOT).until(
+                    EC.visibility_of_element_located((By.CSS_SELECTOR, pw_css_selector))
+                )
+                site_pw.send_keys(site_user_pw)
 
-        # ログインボタンを指定しクリック
-        login_button = self.DRIVER.find_element_by_css_selector(login_button_css_selector)
-        login_button.click()
+                # ログインボタンを指定しクリック
+                login_button = WebDriverWait(self.DRIVER, self.__TIMEOUT_VERY_SHOT).until(
+                    EC.visibility_of_element_located((By.CSS_SELECTOR, login_button_css_selector))
+                )
+                login_button.click()
+            except TimeoutException as te:
+                retry += 1
+                logout.output_log_warning(self, 'ログイン処理失敗　再実行します')
+                error = te
+                continue
 
-    def item_stock_change_button_click_for_buyma(self, click_meta_item):
+            else:
+                logout.output_log_info(self, 'Buymaにログイン成功')
+                break
+        else:
+            logout.output_log_error(self, log_message='ログイン処理失敗', err=error)
+            raise error
+
+    def item_stock_change_button_click_for_buyma(self, item_id):
         """
         Buyma専用メソッド
         商品一覧画面から編集ボタンを押したあとのHTMLを返す
+        Args:
+            item_id(str): 商品ID
         Returns:
-            Union[int, list[Union[int,str]]],None:javascriptがコンパイルされたHTML基本的には文字列が返されるイメージで良い
+            Union[int, list[Union[int,str]]],None: javascriptがコンパイルされたHTMLの文字列が返される
         """
         page_source = None
 
-        # 指定されたクラス名を全て取得
-        logout.output_log_debug(self, '在庫情報の取得開始')
+        # アクセスが失敗した場合にリトライを行う
+        retry = 0
+        error = None
+        while retry < self.__RETRIES:
+            try:
+                logout.output_log_debug(self, '在庫情報取得処理開始')
+                # 編集ボタンが表示されるまでの待機処理
+                WebDriverWait(self.DRIVER, self.__TIMEOUT_VERY_SHOT).until(
+                    EC.visibility_of_element_located((By.CLASS_NAME, 'js-popup-color-size'))
+                )
 
-        click_items = self.DRIVER.find_elements_by_class_name('js-popup-color-size')
-        for click_item in click_items:
-            item_attr = click_item.get_attribute('data-syo-id')
-            click_meta_item = click_meta_item.lstrip('0')
-            # 取得したい商品ID(引数)と編集ボタンの商品IDが一致した場合ウィジットを開き処理を行う
-            if item_attr == click_meta_item:
-                # 商品情報ウィジットの開きソースの取得
-                actions_open = ActionChains(self.DRIVER)
-                actions_open.move_to_element(to_element=click_item)
-                actions_open.click(on_element=click_item)
-                actions_open.perform()
-                time.sleep(1)
-                page_source = self.DRIVER.page_source
-                logout.output_log_debug(self, 'HTML取得完了')
+                click_items = self.DRIVER.find_elements_by_class_name('js-popup-color-size')
+                for click_item in click_items:
+                    item_attr = click_item.get_attribute('data-syo-id')
+                    # 取得したい商品ID(引数)と編集ボタンの商品IDが一致した場合ウィジットを開き処理を行う
+                    # 商品IDの左側に0が存在する場合は取り除く
+                    if item_attr == item_id.lstrip('0'):
+                        # 商品情報ウィジットの開きソースの取得
+                        actions_open = ActionChains(self.DRIVER)
+                        actions_open.move_to_element(to_element=click_item)
+                        actions_open.click(on_element=click_item)
+                        actions_open.perform()
 
-                # 商品情報ウィジットを閉じる
-                actions_close = ActionChains(self.DRIVER)
-                wigit_close_button = self.DRIVER.find_elements_by_css_selector(
-                    '#my > '
-                    'div.ui-dialog.ui-widget.ui-widget-content.ui-corner-all.fab-dialog--primary.cs-dialog > '
-                    'div.ui-dialog-titlebar.ui-widget-header.ui-corner-all.ui-helper-clearfix > '
-                    'a')
-                actions_close.move_to_element(to_element=wigit_close_button[0])
-                actions_close.click(on_element=wigit_close_button[0])
-                actions_close.perform()
-                logout.output_log_debug(self, '商品情報ウィジットのクローズ')
-                time.sleep(1)
+                        # 商品情報ウィジットがω表示されるまで待機
+                        WebDriverWait(self.DRIVER, self.__TIMEOUT_VERY_SHOT).until(
+                            EC.visibility_of_element_located((By.XPATH, '/html/body/div[8]/div[1]/a'))
+                        )
+
+                        time.sleep(self.__TIMEOUT_VERY_SHOT)
+
+                        # 商品ページのHTMLの取得
+                        page_source = self.DRIVER.page_source
+                        logout.output_log_debug(self, 'HTML取得完了')
+
+                        # 商品情報ウィジットを閉じる
+                        actions_close = ActionChains(self.DRIVER)
+                        wigit_close_button = self.DRIVER.find_element_by_xpath('/html/body/div[8]/div[1]/a')
+                        actions_close.move_to_element(to_element=wigit_close_button)
+                        actions_close.click(on_element=wigit_close_button)
+                        actions_close.perform()
+                        logout.output_log_debug(self, '商品情報ウィジットのクローズ')
+
+            except TimeoutException as te:
+                retry += 1
+                logout.output_log_warning(self, '在庫情報取得処理失敗　再実行します')
+                error = te
+                continue
+
+            else:
+                logout.output_log_info(self, '在庫情報取得処理成功')
+                break
+        else:
+            logout.output_log_error(self, log_message='在庫情報取得処理失敗', err=error)
+            raise error
 
         return page_source
 
@@ -198,9 +311,10 @@ class SiteAccess:
                                 '編集ボタンのxpath: //*[@data-vt="/vt/my/buyeritems/edit/colorsize/'
                                 + input_data.item_id_nothing_zero + '"]')
 
-        change_button = self.DRIVER.find_elements_by_xpath(
-            '//*[@data-vt="/vt/my/buyeritems/edit/colorsize/' + input_data.item_id_nothing_zero + '"]')
         while True:
+            change_button = self.DRIVER.find_elements_by_xpath(
+                '//*[@data-vt="/vt/my/buyeritems/edit/colorsize/' + input_data.item_id_nothing_zero + '"]')
+
             # 変更対象の商品が存在しない場合は次へボタンをクリックする
             if not change_button:
                 self.click_next_button()
@@ -219,7 +333,8 @@ class SiteAccess:
                 # 色情報取得
                 # 色情報ヘッダーの取得　
                 logout.output_log_debug(self, '色ヘッダーxpath: //body[@id="my"]/div[8]/div[2]/div/div/table/tbody/tr/th')
-                color_header = self.DRIVER.find_elements_by_xpath('//body[@id="my"]/div[8]/div[2]/div/div/table/tbody/tr/th')
+                color_header = self.DRIVER.find_elements_by_xpath(
+                    '//body[@id="my"]/div[8]/div[2]/div/div/table/tbody/tr/th')
 
                 # 色情報のリストを作成
                 color_list = [v.text for i, v in enumerate(color_header) if i >= 2 and v is not None]
@@ -266,7 +381,6 @@ class SiteAccess:
                     # ここで商品の各リストボックスを扱う
                     item_inventory.click()
                     item_inventory.find_element_by_xpath(input_item_xpath)
-                    logout.output_log_debug(self, 'クリック先のテキスト: ' + item_inventory.text)
                     item_selected = Select(item_inventory)
                     if item_info.existence:
                         item_selected.select_by_index(0)
@@ -304,13 +418,34 @@ class SiteAccess:
         """
         buyma上の表示件数が最大表示数を超えていた場合に画面を遷移させて商品を表示していく
         """
-        # 画面上に「次へ」ボタンの検索
-        next_button = self.DRIVER.find_elements_by_xpath('//*[@rel="next"]')
+        # アクセスが失敗した場合にリトライを行う
+        retry = 0
+        error = None
+        while retry < self.__RETRIES:
+            try:
+                # 次へボタン表示待機
+                WebDriverWait(self.DRIVER, self.__TIMEOUT_VERY_SHOT).until(
+                    EC.visibility_of_element_located((By.XPATH, '//*[@rel="next"]'))
+                )
+                # 画面上に「次へ」ボタンの検索
+                next_button = self.DRIVER.find_elements_by_xpath('//*[@rel="next"]')
 
-        # 「次へ」ボタンの存在確認
-        if next_button:
-            for button in next_button:
-                button.click()
+                # 「次へ」ボタンの存在確認
+                if next_button:
+                    for button in next_button:
+                        button.click()
+
+            except TimeoutException as te:
+                retry += 1
+                error = te
+                self.first_page_access()
+                continue
+
+            else:
+                break
+        else:
+            logout.output_log_error(self, log_message='商品一覧ページの「次へ」ボタン押下処理に失敗しました。', err=error)
+            raise error
 
     def check_next_button(self) -> bool:
         """
@@ -337,14 +472,74 @@ class SiteAccess:
         """
         表示件数を表示数最大の100へ変更する
         """
-        self.DRIVER.find_element_by_xpath('//*[@id="row-count-options"]').click()
-        self.DRIVER.find_element_by_xpath('//*[@id="row-count-options"]/option[3]').click()
+        # アクセスが失敗した場合にリトライを行う
+        retry = 0
+        error = None
+        while retry < self.__RETRIES:
+            try:
+                # 表示件数表示待機
+                WebDriverWait(self.DRIVER, self.__TIMEOUT_VERY_SHOT).until(
+                    EC.visibility_of_element_located((By.XPATH, '//*[@id="row-count-options"]'))
+                )
+                self.DRIVER.find_element_by_xpath('//*[@id="row-count-options"]').click()
+
+                # 表示件数表示ドロップダウンクリック待機
+                WebDriverWait(self.DRIVER, self.__TIMEOUT_VERY_SHOT).until(
+                    EC.visibility_of_element_located((By.XPATH, '//*[@id="row-count-options"]/option[3]'))
+                )
+                self.DRIVER.find_element_by_xpath('//*[@id="row-count-options"]/option[3]').click()
+
+            except TimeoutException as te:
+                retry += 1
+                error = te
+                self.first_page_access()
+                continue
+
+            else:
+                break
+        else:
+            logout.output_log_error(self, log_message='表示件数変更処理に失敗しました。', err=error)
+            raise error
 
     def change_item_num(self):
         """
         入力した商品に対して数量をデフォルトで設定する
         """
-        item_num = self.DRIVER.find_elements_by_xpath('//*[@id="my"]/div[8]/div[2]/div/div[2]/div/div[1]/span/input[1]')
-        for num in item_num:
-            num.clear()
-            num.send_keys('10')
+        # アクセスが失敗した場合にリトライを行う
+        retry = 0
+        error = None
+        while retry < self.__RETRIES:
+            try:
+                # 表示件数表示待機
+                WebDriverWait(self.DRIVER, self.__TIMEOUT_VERY_SHOT).until(
+                    EC.visibility_of_element_located((By.XPATH, '//*[@id="my"]/div[8]/div[2]/div/div[2]'
+                                                                '/div/div[1]/span/input[1]'))
+                )
+
+                item_num = self.DRIVER.find_elements_by_xpath('//*[@id="my"]/div[8]/div[2]/div/div[2]'
+                                                              '/div/div[1]/span/input[1]')
+                for num in item_num:
+                    # 数量入力時に全ての商品が在庫なしになっている場合、テキストボックスが非活性になっているため入力をしない
+                    if num.is_enabled():
+                        num.clear()
+                        num.send_keys('10')
+
+            except TimeoutException as te:
+                retry += 1
+                error = te
+                continue
+
+            else:
+                break
+        else:
+            logout.output_log_error(self, log_message='買付可能数変更処理に失敗しました。', err=error)
+            raise error
+
+    def wait_lord(self):
+        """
+        サイト上の要素が全て読み込めているかを返す
+        Returns:
+            bool: True サイトの読み込みが完了, False サイトの読み込みが未完
+        """
+        page_state = self.DRIVER.execute_script('return document.readyState;')
+        return page_state == 'complete'

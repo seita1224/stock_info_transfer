@@ -104,3 +104,6 @@ venv.bak/
 .mypy_cache/
 
 poetry.lock
+.vscode/launch.json
+.vscode/settings.json
+log/stock_info_transfer.log

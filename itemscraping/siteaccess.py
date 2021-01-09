@@ -19,7 +19,6 @@ import logout
 import re
 
 from models import BuymaItem
-from util.exception import ItemIdException
 
 
 class SiteAccess:
@@ -33,6 +32,7 @@ class SiteAccess:
     __RETRIES = 3
 
     # 接続処理のタイムアウト時間
+    __TIMEOUT_VERY_SHOT = 3
     __TIMEOUT_SHOT = 5
     __TIMEOUT_MIDDLE = 10
     __TIMEOUT_LONG = 20
@@ -57,13 +57,13 @@ class SiteAccess:
         self.DRIVER.maximize_window()
 
         # 要素が見つかるまで繰り返し処理する時間(second)
-        self.DRIVER.implicitly_wait(self.__TIMEOUT_SHOT)
+        self.DRIVER.implicitly_wait(self.__TIMEOUT_VERY_SHOT)
 
         # ページの読み込みが完了するまでの待機時間(second)
-        self.DRIVER.set_script_timeout(self.__TIMEOUT_SHOT)
+        self.DRIVER.set_page_load_timeout(self.__TIMEOUT_LONG)
 
         # ページのjavascriptが実行し終わるまでの待機時間(second)
-        self.DRIVER.set_script_timeout(self.__TIMEOUT_SHOT)
+        self.DRIVER.set_script_timeout(self.__TIMEOUT_LONG)
 
     def script_compile(self, input_url=None, obj=None):
         """
@@ -79,11 +79,13 @@ class SiteAccess:
         if obj.__class__.__name__ == 'Asos':
             # ASOSの商品ページに飛ぶ前に一度トップページにアクセスする(サイトの仕様上直接商品ページへ飛べない仕様になっている)
             self.DRIVER.get('https://www.asos.com/')
-            WebDriverWait(self.DRIVER, self.__TIMEOUT_SHOT).until(EC.visibility_of_all_elements_located)
+
+            time.sleep(self.__TIMEOUT_VERY_SHOT)
+
             # アクセスが失敗した場合にリトライを行う
-            n = 0
+            retry = 0
             error = None
-            while n < self.__RETRIES:
+            while retry < self.__RETRIES:
                 try:
                     logout.output_log_info(self, 'Asos商品ページアクセス処理開始')
 
@@ -91,21 +93,16 @@ class SiteAccess:
                     self.DRIVER.get(input_url)
 
                     # 商品情報が読み込まれるまで待機
-                    WebDriverWait(self.DRIVER, self.__TIMEOUT_SHOT).until(EC.visibility_of_all_elements_located)
+                    WebDriverWait(self.DRIVER, self.__TIMEOUT_VERY_SHOT).until(EC.visibility_of_all_elements_located)
+                    time.sleep(self.__TIMEOUT_VERY_SHOT)
 
                 except TimeoutException as te:
-                    n += 1
+                    retry += 1
                     logout.output_log_warning(self, 'Asos商品ページアクセス処理失敗　再実行します')
                     error = te
-                    # # 処理が失敗した場合にASOSのサイトの特徴としてURLに直接アクセスするとうまくいかない場合があるため
-                    # # 一度ホームページから商品ページまでのアクセスするとうまくいく
-                    # self.DRIVER.get('https://www.asos.com/men/new-in/cat/?cid=27110&nlid=mw|new+in|new+products')
-                    # self.DRIVER.find_element_by_xpath('/html/body/div[1]/div/main/div/div/div/div[2]'
-                    #                                   '/div/div[1]/section/article[1]/a/div[2]/div/div/p').click()
-                    # 商品情報が読み込まれるまで待機
-                    WebDriverWait(self.DRIVER, self.__TIMEOUT_MIDDLE).until(
-                        EC.visibility_of_all_elements_located((By.CSS_SELECTOR, '#main-size-select-0 > option'))
-                    )
+                    # 商品ページへアクセス
+                    self.DRIVER.get(input_url)
+                    WebDriverWait(self.DRIVER, self.__TIMEOUT_MIDDLE).until(EC.visibility_of_all_elements_located)
                     continue
                 else:
                     logout.output_log_info(self, 'Asos商品ページアクセス処理成功')
@@ -114,8 +111,26 @@ class SiteAccess:
                 logout.output_log_warning(self, log_message='Asos商品ページアクセス処理失敗: 商品が売り切れている可能性があります')
                 logout.output_log_error(self, log_message='エラーの内容', err=error)
         else:
-            # インスタンスにて指定したサイトにアクセスする(アクセスしたタイミングでjavascriptがコンパイルされる)
-            self.DRIVER.get(input_url)
+            # アクセスが失敗した場合にリトライを行う
+            retry = 0
+            error = None
+            while retry < self.__RETRIES:
+                try:
+                    # インスタンスにて指定したサイトにアクセスする(アクセスしたタイミングでjavascriptがコンパイルされる)
+                    self.DRIVER.get(input_url)
+                except TimeoutException as te:
+                    retry += 1
+                    error = te
+
+                    # インスタンスにて指定したサイトにアクセスする(アクセスしたタイミングでjavascriptがコンパイルされる)
+                    self.DRIVER.get(input_url)
+                    WebDriverWait(self.DRIVER, self.__TIMEOUT_MIDDLE).until(EC.visibility_of_all_elements_located)
+                    continue
+                else:
+                    logout.output_log_info(self, 'Asos商品ページアクセス処理成功')
+                    break
+            else:
+                logout.output_log_error(self, log_message='エラーの内容', err=error)
 
         # htmlを返す
         return self.DRIVER.page_source
@@ -171,32 +186,32 @@ class SiteAccess:
             raise e
 
         # アクセスが失敗した場合にリトライを行う
-        n = 0
+        retry = 0
         error = None
-        while n < self.__RETRIES:
+        while retry < self.__RETRIES:
             try:
                 logout.output_log_info(self, 'Buymaログイン処理開始')
                 # ログイン先にアクセス
                 self.DRIVER.get(login_url)
 
                 # ID、PWの場所を指定して入力
-                site_id = WebDriverWait(self.DRIVER, self.__TIMEOUT_SHOT).until(
+                site_id = WebDriverWait(self.DRIVER, self.__TIMEOUT_VERY_SHOT).until(
                     EC.visibility_of_element_located((By.CSS_SELECTOR, id_css_selector))
                 )
                 site_id.send_keys(site_user_id)
 
-                site_pw = WebDriverWait(self.DRIVER, self.__TIMEOUT_SHOT).until(
+                site_pw = WebDriverWait(self.DRIVER, self.__TIMEOUT_VERY_SHOT).until(
                     EC.visibility_of_element_located((By.CSS_SELECTOR, pw_css_selector))
                 )
                 site_pw.send_keys(site_user_pw)
 
                 # ログインボタンを指定しクリック
-                login_button = WebDriverWait(self.DRIVER, self.__TIMEOUT_SHOT).until(
+                login_button = WebDriverWait(self.DRIVER, self.__TIMEOUT_VERY_SHOT).until(
                     EC.visibility_of_element_located((By.CSS_SELECTOR, login_button_css_selector))
                 )
                 login_button.click()
             except TimeoutException as te:
-                n += 1
+                retry += 1
                 logout.output_log_warning(self, 'ログイン処理失敗　再実行します')
                 error = te
                 continue
@@ -220,13 +235,13 @@ class SiteAccess:
         page_source = None
 
         # アクセスが失敗した場合にリトライを行う
-        n = 0
+        retry = 0
         error = None
-        while n < self.__RETRIES:
+        while retry < self.__RETRIES:
             try:
                 logout.output_log_debug(self, '在庫情報取得処理開始')
                 # 編集ボタンが表示されるまでの待機処理
-                WebDriverWait(self.DRIVER, self.__TIMEOUT_SHOT).until(
+                WebDriverWait(self.DRIVER, self.__TIMEOUT_VERY_SHOT).until(
                     EC.visibility_of_element_located((By.CLASS_NAME, 'js-popup-color-size'))
                 )
 
@@ -242,10 +257,12 @@ class SiteAccess:
                         actions_open.click(on_element=click_item)
                         actions_open.perform()
 
-                        # 商品情報ウィジットが表示されるまで待機
-                        WebDriverWait(self.DRIVER, self.__TIMEOUT_SHOT).until(
+                        # 商品情報ウィジットがω表示されるまで待機
+                        WebDriverWait(self.DRIVER, self.__TIMEOUT_VERY_SHOT).until(
                             EC.visibility_of_element_located((By.XPATH, '/html/body/div[8]/div[1]/a'))
                         )
+
+                        time.sleep(self.__TIMEOUT_VERY_SHOT)
 
                         # 商品ページのHTMLの取得
                         page_source = self.DRIVER.page_source
@@ -260,7 +277,7 @@ class SiteAccess:
                         logout.output_log_debug(self, '商品情報ウィジットのクローズ')
 
             except TimeoutException as te:
-                n += 1
+                retry += 1
                 logout.output_log_warning(self, '在庫情報取得処理失敗　再実行します')
                 error = te
                 continue
@@ -402,12 +419,12 @@ class SiteAccess:
         buyma上の表示件数が最大表示数を超えていた場合に画面を遷移させて商品を表示していく
         """
         # アクセスが失敗した場合にリトライを行う
-        n = 0
+        retry = 0
         error = None
-        while n < self.__RETRIES:
+        while retry < self.__RETRIES:
             try:
                 # 次へボタン表示待機
-                WebDriverWait(self.DRIVER, self.__TIMEOUT_SHOT).until(
+                WebDriverWait(self.DRIVER, self.__TIMEOUT_VERY_SHOT).until(
                     EC.visibility_of_element_located((By.XPATH, '//*[@rel="next"]'))
                 )
                 # 画面上に「次へ」ボタンの検索
@@ -419,7 +436,7 @@ class SiteAccess:
                         button.click()
 
             except TimeoutException as te:
-                n += 1
+                retry += 1
                 error = te
                 self.first_page_access()
                 continue
@@ -456,24 +473,24 @@ class SiteAccess:
         表示件数を表示数最大の100へ変更する
         """
         # アクセスが失敗した場合にリトライを行う
-        n = 0
+        retry = 0
         error = None
-        while n < self.__RETRIES:
+        while retry < self.__RETRIES:
             try:
                 # 表示件数表示待機
-                WebDriverWait(self.DRIVER, self.__TIMEOUT_SHOT).until(
+                WebDriverWait(self.DRIVER, self.__TIMEOUT_VERY_SHOT).until(
                     EC.visibility_of_element_located((By.XPATH, '//*[@id="row-count-options"]'))
                 )
                 self.DRIVER.find_element_by_xpath('//*[@id="row-count-options"]').click()
 
                 # 表示件数表示ドロップダウンクリック待機
-                WebDriverWait(self.DRIVER, self.__TIMEOUT_SHOT).until(
+                WebDriverWait(self.DRIVER, self.__TIMEOUT_VERY_SHOT).until(
                     EC.visibility_of_element_located((By.XPATH, '//*[@id="row-count-options"]/option[3]'))
                 )
                 self.DRIVER.find_element_by_xpath('//*[@id="row-count-options"]/option[3]').click()
 
             except TimeoutException as te:
-                n += 1
+                retry += 1
                 error = te
                 self.first_page_access()
                 continue
@@ -489,12 +506,12 @@ class SiteAccess:
         入力した商品に対して数量をデフォルトで設定する
         """
         # アクセスが失敗した場合にリトライを行う
-        n = 0
+        retry = 0
         error = None
-        while n < self.__RETRIES:
+        while retry < self.__RETRIES:
             try:
                 # 表示件数表示待機
-                WebDriverWait(self.DRIVER, self.__TIMEOUT_SHOT).until(
+                WebDriverWait(self.DRIVER, self.__TIMEOUT_VERY_SHOT).until(
                     EC.visibility_of_element_located((By.XPATH, '//*[@id="my"]/div[8]/div[2]/div/div[2]'
                                                                 '/div/div[1]/span/input[1]'))
                 )
@@ -508,7 +525,7 @@ class SiteAccess:
                         num.send_keys('10')
 
             except TimeoutException as te:
-                n += 1
+                retry += 1
                 error = te
                 continue
 
@@ -517,3 +534,12 @@ class SiteAccess:
         else:
             logout.output_log_error(self, log_message='買付可能数変更処理に失敗しました。', err=error)
             raise error
+
+    def wait_lord(self):
+        """
+        サイト上の要素が全て読み込めているかを返す
+        Returns:
+            bool: True サイトの読み込みが完了, False サイトの読み込みが未完
+        """
+        page_state = self.DRIVER.execute_script('return document.readyState;')
+        return page_state == 'complete'

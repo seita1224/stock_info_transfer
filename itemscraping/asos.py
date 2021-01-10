@@ -40,7 +40,7 @@ class Asos:
         bf = BeautifulSoup(self.site_access.script_compile(input_url=item_url, obj=self), 'html.parser')
 
         # 在庫が全て無い場合
-        if self.is_out_stock(bf):
+        if not self.is_out_stock(bf):
             logout.output_log_debug(self, '商品サイズ取得できませんでした。')
             return list()
 
@@ -70,7 +70,7 @@ class Asos:
         bf = BeautifulSoup(self.site_access.script_compile(input_url=item_url, obj=self), 'html.parser')
 
         # 在庫が全て無い場合
-        if self.is_out_stock(bf):
+        if not self.is_out_stock(bf):
             logout.output_log_debug(self, '商品サイズ取得できませんでした。')
             return list()
 
@@ -83,7 +83,7 @@ class Asos:
 
         for item in item_stock_info:
             if ' - Not available' in item.text:
-                item_info_list.append(item.text)
+                item_info_list.append(str(item.text).strip(' - Not available'))
 
         logout.output_log_debug(self, 'ASOSにて検索できたサイズ: ' + str(item_info_list))
         return item_info_list
@@ -101,7 +101,7 @@ class Asos:
 
         """
         item_info = bf.select('#main-size-select-0 > option')
-        if item_info is None:
+        if not item_info:
             logout.output_log_debug(self, '商品全てが売り切れ')
             return False
 

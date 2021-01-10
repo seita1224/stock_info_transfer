@@ -13,6 +13,7 @@ from typing import List
 from itemscraping.siteaccess import SiteAccess
 from itemscraping.sitesmeta import SitesMeta
 from models import ItemMeta, BuymaItem
+from models.existence import Existence
 import logout
 import re
 
@@ -166,9 +167,14 @@ class Buyma:
                         item_existence.append([])
                         for item_stock_existence_index in range(2, len(row), 1):
                             if row[item_stock_existence_index] == '買付可':
-                                item_existence[row_index].append(True)
+                                item_existence[row_index].append(Existence.IN_STOCK)
+                            elif row[item_stock_existence_index] == '在庫なし':
+                                item_existence[row_index].append(Existence.OUT_OF_STOCK)
+                            elif row[item_stock_existence_index] == '手元に在庫あり':
+                                item_existence[row_index].append(Existence.IN_STOCK_AT_HAND)
                             else:
-                                item_existence[row_index].append(False)
+                                item_existence[row_index].append(Existence.NO_INPUT)
+
                         row_index += 1
 
                 logout.output_log_debug(self, str(item_existence))
@@ -232,6 +238,24 @@ class Buyma:
 
         return item_size_list
 
+    def get_item_existence(self, item_id: str, item_color: str, item_size: str) -> Existence:
+        """
+        商品情報を受け取って在庫情報を返す
+        Args:
+            item_id: 商品ID
+            item_color: 色
+            item_size: サイズ
+
+        Returns:
+            Existence: 商品の在庫情報
+        """
+        for buyma_item in self.__buyma_item_list:
+            if buyma_item.item_id == item_id:
+                for item_info in buyma_item.item_info:
+                    if item_info == ItemMeta(color=item_color, size=item_size):
+                        return item_info.existence
+        return Existence.NO_INPUT
+
     def input_item_stock(self, input_data: BuymaItem):
         """
         出品商品一覧から在庫情報の入力を行う
@@ -275,7 +299,10 @@ class Buyma:
         for buyma_item in self.__buyma_item_list:
             item_id_list.append(buyma_item.item_id)
             # 全ての商品に対して在庫が1つでも存在するか判定する
-            exists_list.append(any([exists.existence for exists in buyma_item.item_info]))
+            item_info_for_existence = [item_info.existence for item_info in buyma_item.item_info]
+            exists_list.append(any([existence == Existence.IN_STOCK or
+                                    existence == Existence.IN_STOCK_AT_HAND for
+                                    existence in item_info_for_existence]))
 
         stock_exists_list = [item_id_list, exists_list]
 
@@ -292,11 +319,11 @@ class Buyma:
         # 商品が存在しないものをCSV出力する
         df = pd.DataFrame({'item_id': item_stock_list[0],
                            'item_exists': item_stock_list[1]})
-        data_len = len(df[df.item_exists == False])
+        data_len = len(df[df.item_exists != Existence.OUT_OF_STOCK])
         if data_len > 0:
-            df[df.item_exists == False].to_csv('output_data/stock_nothing_item.csv', index=False)
+            df[df.item_exists == Existence.OUT_OF_STOCK].to_csv('output_data/stock_nothing_item.csv', index=False)
         else:
-            logout.output_log_info(self, '在庫全てが存在しない商品がありませんでした。')
+            logout.output_log_info(self, '出品停止対象の商品はありませんでした。')
 
         item_id_stock_nothing = list()
 

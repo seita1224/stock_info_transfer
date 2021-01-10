@@ -18,6 +18,7 @@ from itemscraping import sitesmeta
 import logout
 import re
 
+from models.existence import Existence
 from models import BuymaItem
 
 
@@ -327,6 +328,10 @@ class SiteAccess:
                 actions_open.click(on_element=change_button)
                 actions_open.perform()
 
+                # テスト用
+                image_dir = '/Users/seita/Program/python/stock_info_transfer/test_image/before_input.png'
+                self.DRIVER.save_screenshot(image_dir)
+
                 # 商品の買い付けできる合計数量を変更する
                 self.change_item_num()
 
@@ -372,25 +377,33 @@ class SiteAccess:
 
                 # 商品入力用のオブジェクト取得(Selenium上で商品の有無のリストボックスを操作できるよう取得)
                 for item_info in input_data.item_info:
-                    input_item_xpath = '//*[@id="my"]/div[8]/div[2]/div/div[1]/table/tbody/tr[' \
-                                       + str(size_place_map[item_info.size]) + ']/td[' \
-                                       + str(color_place_dict[item_info.color]) + ']/div/select'
-                    item_inventory = self.DRIVER.find_element_by_xpath(input_item_xpath)
-                    logout.output_log_debug(self, '入力用Xpath: ' + input_item_xpath)
+                    # 「手元に在庫あり」の商品は更新対象外
+                    if item_info.existence != Existence.IN_STOCK_AT_HAND:
+                        input_item_xpath = '//*[@id="my"]/div[8]/div[2]/div/div[1]/table/tbody/tr[' \
+                                           + str(size_place_map[item_info.size]) + ']/td[' \
+                                           + str(color_place_dict[item_info.color]) + ']/div/select'
+                        item_inventory = self.DRIVER.find_element_by_xpath(input_item_xpath)
+                        logout.output_log_debug(self, '入力用Xpath: ' + input_item_xpath)
 
-                    # ここで商品の各リストボックスを扱う
-                    item_inventory.click()
-                    item_inventory.find_element_by_xpath(input_item_xpath)
-                    item_selected = Select(item_inventory)
-                    if item_info.existence:
-                        item_selected.select_by_index(0)
+                        # ここで商品の各リストボックスを扱う
+                        item_inventory.click()
+                        item_selected = Select(item_inventory)
+                        if item_info.existence == Existence.IN_STOCK:
+                            item_selected.select_by_index(0)
+                        elif item_info.existence == Existence.IN_STOCK:
+                            item_selected.select_by_index(1)
                     else:
-                        item_selected.select_by_index(1)
+                        logout.output_log_info(self, '更新対象外の商品情報: 商品ID:' + input_data.item_id + ' ' + str(item_info))
+
+
 
                 # 商品情報確定ボタン
                 update_button = self.DRIVER.find_element_by_xpath('//*[@id="my"]/div[8]/div[2]/div/div[3]/a[2]')
                 update_button.click()
                 break
+        # テスト用
+        image_dir = '/Users/seita/Program/python/stock_info_transfer/test_image/after_input.png'
+        self.DRIVER.save_screenshot(image_dir)
 
     def read(self):
         """

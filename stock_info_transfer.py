@@ -6,6 +6,9 @@ import logout
 
 # 在庫情報取得用のオブジェクト初期化
 from models import BuymaItem, ItemMeta
+from models.existence import Existence
+
+logout.output_log_info(None, '-------------------------------------------------------在庫情報更新処理開始-------------------------------------------------------')
 
 by = Buyma()
 csv_parse = CsvParse('./input_data/input_csv.csv')
@@ -18,7 +21,7 @@ csv_item_id_list = csv_parse.get_item_id_list()
 # 在庫情報更新対象商品がbuyma上の商品と一致しているかの検証
 logout.output_log_debug(None, 'Buyma上の商品ID: ' + str(buyma_item_id_list))
 logout.output_log_debug(None, 'csv上の商品ID: ' + str(csv_item_id_list))
-item_id_stock_check = list(set(buyma_item_id_list) & set(csv_item_id_list))        # 在庫確認対象商品ID
+item_id_stock_check = list(set(buyma_item_id_list) & set(csv_item_id_list))  # 在庫確認対象商品ID
 logout.output_log_debug(None, 'Buyma、CSVどちらにも存在したもの: ' + str(item_id_stock_check))
 
 # 入力された商品の色情報→サイズの順番で情報が一致しているかの検証
@@ -40,9 +43,15 @@ for item_id in item_id_stock_check:
         csv_sizes = csv_parse.get_item_size_list_for_buyma(item_id=item_id, item_color=color)
         item_size_stock_check = list(set(buyma_sizes) & set(csv_sizes))
         if item_id in item_buyma_csv_exists:
-            item_buyma_csv_exists[item_id].extend([ItemMeta(color=color, size=size) for size in item_size_stock_check])
+            item_buyma_csv_exists[item_id].extend([ItemMeta(color=color,
+                                                            size=size,
+                                                            existence=by.get_item_existence(item_id, color, size))
+                                                   for size in item_size_stock_check])
         else:
-            item_buyma_csv_exists[item_id] = [ItemMeta(color=color, size=size) for size in item_size_stock_check]
+            item_buyma_csv_exists[item_id] = [ItemMeta(color=color,
+                                                       size=size,
+                                                       existence=by.get_item_existence(item_id, color, size))
+                                              for size in item_size_stock_check]
 
 # -----------------    仕入れ先(ASOS)の在庫情報の取得   -----------------
 # ASOSから商品情報を取得するためのオブジェクト
@@ -53,7 +62,7 @@ target_input_itme_id = set()
 
 # CSVから商品URLへアクセスを行い商品が存在しているサイズを取得
 for item_id in item_buyma_csv_exists.keys():
-    for item_meta in item_buyma_csv_exists[item_id]:
+    for i, item_meta in enumerate(item_buyma_csv_exists[item_id]):
         url = csv_parse.get_item_url_list_for_shop(item_id=item_id,
                                                    color=item_meta.color,
                                                    size=item_meta.size)
@@ -73,12 +82,16 @@ for item_id in item_buyma_csv_exists.keys():
             # 在庫が存在するものに関しての在庫情報を更新する
             for asos_item_size in asos_item_exists_size:
                 if item_meta.size == asos_item_size:
-                    item_meta.existence = True
+                    # 「手元に在庫あり」の商品は在庫情報を変更しない(商品情報更新前に対象から外す)
+                    if not item_buyma_csv_exists[item_id][i].existence == Existence.IN_STOCK_AT_HAND:
+                        item_buyma_csv_exists[item_id][i].existence = Existence.IN_STOCK
 
             # 在庫が存在しないものに関しての在庫情報を更新する
             for asos_item_size in asos_item_not_exists_size:
                 if item_meta.size == asos_item_size:
-                    item_meta.existence = False
+                    # 「手元に在庫あり」の商品は在庫情報を変更しない(商品情報更新前に対象から外す)
+                    if not item_buyma_csv_exists[item_id][i].existence == Existence.IN_STOCK_AT_HAND:
+                        item_buyma_csv_exists[item_id][i].existence = Existence.OUT_OF_STOCK
 
         except Exception as err:
             logout.output_log_error(class_obj=None, log_message='仕入れ先商品情報取得エラー商品ID:' + str(item_id), err=err)
@@ -97,3 +110,5 @@ by.output_csv_nothing_stock()
 
 by.close()
 asos.close()
+
+logout.output_log_info(None, '-------------------------------------------------------在庫情報更新処理終了-------------------------------------------------------')

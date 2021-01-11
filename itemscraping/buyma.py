@@ -34,9 +34,22 @@ class Buyma:
         self.meta = SitesMeta().get_site_meta('SellSite.Buyma')
         self.site_access = SiteAccess()
         self.site_access.login(site_meta='SellSite.Buyma')
-        self.__buyma_item_list: List[BuymaItem] = self.get_sell_item_stock()
+        self.__buyma_item_list: List[BuymaItem] = []
+        self.create_buyam_item_list()
 
-    def get_sells_item_list(self) -> dict:
+    def create_buyam_item_list(self):
+        html = self.site_access.script_compile('https://www.buyma.com/my/sell/#/')
+
+        while True:
+            item_dict = self.get_sells_item_list(html=html)
+            self.__buyma_item_list.extend(self.get_sell_item_stock(item_dict=item_dict))
+            if self.site_access.check_next_button():
+                self.site_access.click_next_button()
+                html = self.site_access.get_now_html()
+            else:
+                break
+
+    def get_sells_item_list(self, html) -> dict:
         """
         出品している商品の情報を抽出し、一覧を返す
         Returns:
@@ -46,9 +59,7 @@ class Buyma:
             item_list_meta = self.meta['ItemOfInfo']['ItemListInfo']
 
             # 出品リストのページのHTMLの取得
-            bf = BeautifulSoup(self.site_access.script_compile(input_url=item_list_meta['ItemListURL']),
-                               'html.parser')
-            logout.output_log_debug(self, '出品サイトURL:' + item_list_meta['ItemListURL'])
+            bf = BeautifulSoup(html, 'html.parser')
 
             # 商品名と商品IDを取得し、辞書型に変換する
             # 商品ID
@@ -77,28 +88,20 @@ class Buyma:
 
             item_dict = dict(zip(item_id_text_list, item_name_text_list))
 
-        except Exception:
+        except Exception as e:
             logout.output_log_error(self, '出品商品一覧からデータの取得が失敗しました。')
             logout.output_log_error(self, traceback.format_exc())
-            raise Exception('出品商品一覧からデータの取得が失敗しました。')
+            raise e
 
         return item_dict
 
-    def get_sell_item_stock(self) -> list:
+    def get_sell_item_stock(self, item_dict) -> list:
         """
         Returns:
             list: 商品ごとの現在色、サイズ、在庫の有無
         """
         try:
             item_stock_meta = self.meta['ItemOfInfo']['ItemStockInfo']
-
-            # 出品リストのページへアクセス
-            self.site_access.script_compile(input_url=item_stock_meta['ItemStockURL'])
-            logout.output_log_debug(self, '出品サイトURL:' + item_stock_meta['ItemStockURL'])
-
-            # 商品の在庫情報取得箇所指定用リスト
-            item_dict = self.get_sells_item_list()
-            logout.output_log_debug(self, '商品の内容:' + str(item_dict))
 
             # Buyma上の商品ウェジットの中の内容が入力されている
             buyma_item_list = []
@@ -193,7 +196,7 @@ class Buyma:
         except Exception as e:
             message = 'Buymaの出品リスト商品の在庫状況データの取得が失敗しました。'
             logout.output_log_error(self, log_message=message, err=e)
-            raise Exception(message)
+            raise e
 
     def get_item_id_list(self) -> list:
         """
@@ -265,8 +268,8 @@ class Buyma:
         try:
             self.site_access.input_item_stock_for_buyma(input_data)
             self.update_item_info(input_data)
-        except ItemIdException as err:
-            raise err
+        except ItemIdException as e:
+            raise e
 
     def close(self):
         """

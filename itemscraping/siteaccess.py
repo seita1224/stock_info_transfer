@@ -111,6 +111,7 @@ class SiteAccess:
             else:
                 logout.output_log_warning(self, log_message='Asos商品ページアクセス処理失敗: 商品が売り切れている可能性があります')
                 logout.output_log_error(self, log_message='エラーの内容', err=error)
+                raise error
         else:
             # アクセスが失敗した場合にリトライを行う
             retry = 0
@@ -132,6 +133,7 @@ class SiteAccess:
                     break
             else:
                 logout.output_log_error(self, log_message='エラーの内容', err=error)
+                raise error
 
         # htmlを返す
         return self.DRIVER.page_source
@@ -258,16 +260,14 @@ class SiteAccess:
                         actions_open.click(on_element=click_item)
                         actions_open.perform()
 
-                        # 商品情報ウィジットがω表示されるまで待機
-                        WebDriverWait(self.DRIVER, self.__TIMEOUT_VERY_SHOT).until(
-                            EC.visibility_of_element_located((By.XPATH, '/html/body/div[8]/div[1]/a'))
-                        )
-
                         time.sleep(self.__TIMEOUT_VERY_SHOT)
 
                         # 商品ページのHTMLの取得
                         page_source = self.DRIVER.page_source
-                        logout.output_log_debug(self, 'HTML取得完了')
+
+                        WebDriverWait(self.DRIVER, self.__TIMEOUT_VERY_SHOT).until(
+                            EC.visibility_of_element_located((By.XPATH, '/html/body/div[8]/div[1]/a'))
+                        )
 
                         # 商品情報ウィジットを閉じる
                         actions_close = ActionChains(self.DRIVER)
@@ -275,11 +275,11 @@ class SiteAccess:
                         actions_close.move_to_element(to_element=wigit_close_button)
                         actions_close.click(on_element=wigit_close_button)
                         actions_close.perform()
-                        logout.output_log_debug(self, '商品情報ウィジットのクローズ')
 
             except TimeoutException as te:
                 retry += 1
-                logout.output_log_warning(self, '在庫情報取得処理失敗　再実行します')
+                logout.output_log_warning(self, '在庫情報取得処理失敗　再実行します : リトライ回数:' + str(retry) +
+                                                '  商品ID : ' + item_id)
                 error = te
                 continue
 
@@ -438,15 +438,14 @@ class SiteAccess:
             try:
                 # 次へボタン表示待機
                 WebDriverWait(self.DRIVER, self.__TIMEOUT_VERY_SHOT).until(
-                    EC.visibility_of_element_located((By.XPATH, '//*[@rel="next"]'))
+                    EC.visibility_of_element_located((By.XPATH, '//*[@rel="next" and text() = "次へ"]'))
                 )
                 # 画面上に「次へ」ボタンの検索
-                next_button = self.DRIVER.find_elements_by_xpath('//*[@rel="next"]')
+                next_button = self.DRIVER.find_elements_by_xpath('//*[@rel="next" and text() = "次へ"]')
 
                 # 「次へ」ボタンの存在確認
                 if next_button:
-                    for button in next_button:
-                        button.click()
+                    next_button[0].click()
 
             except TimeoutException as te:
                 retry += 1
@@ -465,7 +464,7 @@ class SiteAccess:
         buyma上「次へ」ボタンの確認
         """
         # 画面上に「次へ」ボタンの検索
-        next_button = self.DRIVER.find_elements_by_xpath('//*[@rel="next"]')
+        next_button = self.DRIVER.find_elements_by_xpath('//*[@rel="next" and text() = "次へ"]')
 
         # 「次へ」ボタンの存在確認
         if next_button:
@@ -556,3 +555,11 @@ class SiteAccess:
         """
         page_state = self.DRIVER.execute_script('return document.readyState;')
         return page_state == 'complete'
+
+    def get_now_html(self):
+        """
+        現在のHTMLソースを返す
+        Returns:
+            Union[int, List[Union[int, str]]]: 現在ブラウザが参照しているHTML
+        """
+        return self.DRIVER.page_source

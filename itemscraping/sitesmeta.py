@@ -28,9 +28,9 @@ class SitesMeta:
             with open(config_path,encoding='utf-8') as config_yaml_file:
                 self.config_yaml = yaml.safe_load(config_yaml_file)
 
-        except Exception as e:
+        except IOError as e:
             logout.output_log_error(class_obj=self, log_message=traceback.format_exc())
-            raise IOError(e)
+            raise e
 
     def get_site_meta(self, data_names: str):
         """

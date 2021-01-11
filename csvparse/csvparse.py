@@ -26,6 +26,7 @@ class CsvParse:
 
         except IOError as e:
             logout.output_log_error(self, '指定されたパスにCSVファイルが存在しません')
+            raise e
 
     def create_csv_data(self) -> list:
         """

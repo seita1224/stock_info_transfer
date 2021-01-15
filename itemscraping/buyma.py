@@ -38,14 +38,16 @@ class Buyma:
         self.create_buyam_item_list()
 
     def create_buyam_item_list(self):
-        html = self.site_access.script_compile('https://www.buyma.com/my/sell/#/')
+        self.site_access.script_compile('https://www.buyma.com/my/sell/#/')
+        self.site_access.change_display_matter()
 
         while True:
+            self.site_access.change_display_matter()
+            html = self.site_access.get_now_html()
             item_dict = self.get_sells_item_list(html=html)
             self.__buyma_item_list.extend(self.get_sell_item_stock(item_dict=item_dict))
             if self.site_access.check_next_button():
                 self.site_access.click_next_button()
-                html = self.site_access.get_now_html()
             else:
                 break
 

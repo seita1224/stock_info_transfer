@@ -30,7 +30,7 @@ class SiteAccess:
     DRIVER = None
 
     # サイトアクセス処理リトライ回数
-    __RETRIES = 3
+    __RETRIES = 5
 
     # 接続処理のタイムアウト時間
     __TIMEOUT_VERY_SHOT = 3
@@ -249,6 +249,7 @@ class SiteAccess:
                 )
 
                 click_items = self.DRIVER.find_elements_by_class_name('js-popup-color-size')
+
                 for click_item in click_items:
                     item_attr = click_item.get_attribute('data-syo-id')
                     # 取得したい商品ID(引数)と編集ボタンの商品IDが一致した場合ウィジットを開き処理を行う
@@ -260,7 +261,10 @@ class SiteAccess:
                         actions_open.click(on_element=click_item)
                         actions_open.perform()
 
-                        time.sleep(self.__TIMEOUT_VERY_SHOT)
+                        if not 0 < retry:
+                            time.sleep(self.__TIMEOUT_VERY_SHOT)
+                        else:
+                            time.sleep(self.__TIMEOUT_SHOT)
 
                         # 商品ページのHTMLの取得
                         page_source = self.DRIVER.page_source
@@ -329,8 +333,8 @@ class SiteAccess:
                 actions_open.perform()
 
                 # テスト用
-                image_dir = '/Users/seita/Program/python/stock_info_transfer/test_image/before_input.png'
-                self.DRIVER.save_screenshot(image_dir)
+                # image_dir = '/Users/seita/Program/python/stock_info_transfer/test_image/before_input.png'
+                # self.DRIVER.save_screenshot(image_dir)
 
                 # 商品の買い付けできる合計数量を変更する
                 self.change_item_num()
@@ -395,15 +399,13 @@ class SiteAccess:
                     else:
                         logout.output_log_info(self, '更新対象外の商品情報: 商品ID:' + input_data.item_id + ' ' + str(item_info))
 
-
-
                 # 商品情報確定ボタン
                 update_button = self.DRIVER.find_element_by_xpath('//*[@id="my"]/div[8]/div[2]/div/div[3]/a[2]')
                 update_button.click()
                 break
         # テスト用
-        image_dir = '/Users/seita/Program/python/stock_info_transfer/test_image/after_input.png'
-        self.DRIVER.save_screenshot(image_dir)
+        # image_dir = '/Users/seita/Program/python/stock_info_transfer/test_image/after_input.png'
+        # self.DRIVER.save_screenshot(image_dir)
 
     def read(self):
         """
@@ -446,6 +448,8 @@ class SiteAccess:
                 # 「次へ」ボタンの存在確認
                 if next_button:
                     next_button[0].click()
+
+                time.sleep(self.__TIMEOUT_VERY_SHOT)
 
             except TimeoutException as te:
                 retry += 1
@@ -500,6 +504,9 @@ class SiteAccess:
                     EC.visibility_of_element_located((By.XPATH, '//*[@id="row-count-options"]/option[3]'))
                 )
                 self.DRIVER.find_element_by_xpath('//*[@id="row-count-options"]/option[3]').click()
+                time.sleep(self.__TIMEOUT_VERY_SHOT)
+
+                time.sleep(self.__TIMEOUT_VERY_SHOT)
 
             except TimeoutException as te:
                 retry += 1

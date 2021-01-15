@@ -61,7 +61,9 @@ class Buyma:
             item_list_meta = self.meta['ItemOfInfo']['ItemListInfo']
 
             # 出品リストのページのHTMLの取得
-            bf = BeautifulSoup(html, 'html.parser')
+            bf = BeautifulSoup(self.site_access.script_compile(input_url=item_list_meta['ItemListURL']),
+                               'html.parser')
+            logout.output_log_debug(self, '出品サイトURL:' + item_list_meta['ItemListURL'])
 
             # 商品名と商品IDを取得し、辞書型に変換する
             # 商品ID
@@ -90,20 +92,28 @@ class Buyma:
 
             item_dict = dict(zip(item_id_text_list, item_name_text_list))
 
-        except Exception as e:
+        except Exception:
             logout.output_log_error(self, '出品商品一覧からデータの取得が失敗しました。')
             logout.output_log_error(self, traceback.format_exc())
-            raise e
+            raise Exception('出品商品一覧からデータの取得が失敗しました。')
 
         return item_dict
 
-    def get_sell_item_stock(self, item_dict) -> list:
+    def get_sell_item_stock(self) -> list:
         """
         Returns:
             list: 商品ごとの現在色、サイズ、在庫の有無
         """
         try:
             item_stock_meta = self.meta['ItemOfInfo']['ItemStockInfo']
+
+            # 出品リストのページへアクセス
+            self.site_access.script_compile(input_url=item_stock_meta['ItemStockURL'])
+            logout.output_log_debug(self, '出品サイトURL:' + item_stock_meta['ItemStockURL'])
+
+            # 商品の在庫情報取得箇所指定用リスト
+            item_dict = self.get_sells_item_list()
+            logout.output_log_debug(self, '商品の内容:' + str(item_dict))
 
             # Buyma上の商品ウェジットの中の内容が入力されている
             buyma_item_list = []
@@ -198,7 +208,7 @@ class Buyma:
         except Exception as e:
             message = 'Buymaの出品リスト商品の在庫状況データの取得が失敗しました。'
             logout.output_log_error(self, log_message=message, err=e)
-            raise e
+            raise Exception(message)
 
     def get_item_id_list(self) -> list:
         """
@@ -270,8 +280,8 @@ class Buyma:
         try:
             self.site_access.input_item_stock_for_buyma(input_data)
             self.update_item_info(input_data)
-        except ItemIdException as e:
-            raise e
+        except ItemIdException as err:
+            raise err
 
     def close(self):
         """

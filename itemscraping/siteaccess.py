@@ -249,7 +249,6 @@ class SiteAccess:
                 )
 
                 click_items = self.DRIVER.find_elements_by_class_name('js-popup-color-size')
-
                 for click_item in click_items:
                     item_attr = click_item.get_attribute('data-syo-id')
                     # 取得したい商品ID(引数)と編集ボタンの商品IDが一致した場合ウィジットを開き処理を行う
@@ -399,6 +398,8 @@ class SiteAccess:
                     else:
                         logout.output_log_info(self, '更新対象外の商品情報: 商品ID:' + input_data.item_id + ' ' + str(item_info))
 
+
+
                 # 商品情報確定ボタン
                 update_button = self.DRIVER.find_element_by_xpath('//*[@id="my"]/div[8]/div[2]/div/div[3]/a[2]')
                 update_button.click()
@@ -504,9 +505,6 @@ class SiteAccess:
                     EC.visibility_of_element_located((By.XPATH, '//*[@id="row-count-options"]/option[3]'))
                 )
                 self.DRIVER.find_element_by_xpath('//*[@id="row-count-options"]/option[3]').click()
-                time.sleep(self.__TIMEOUT_VERY_SHOT)
-
-                time.sleep(self.__TIMEOUT_VERY_SHOT)
 
             except TimeoutException as te:
                 retry += 1

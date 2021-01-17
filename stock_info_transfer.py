@@ -42,14 +42,21 @@ for item_id in item_id_stock_check:
         buyma_sizes = by.get_item_size_list(item_id=item_id, item_color=color)
         csv_sizes = csv_parse.get_item_size_list_for_buyma(item_id=item_id, item_color=color)
         item_size_stock_check = list(set(buyma_sizes) & set(csv_sizes))
+        # item_buyma_csv_existsに存在するなら商品情報のリストに結合する
         if item_id in item_buyma_csv_exists:
             item_buyma_csv_exists[item_id].extend([ItemMeta(color=color,
                                                             size=size,
+                                                            shop_size=csv_parse.get_item_size_for_shop(item_id=item_id,
+                                                                                                       item_color=color,
+                                                                                                       item_buyma_size=size),
                                                             existence=by.get_item_existence(item_id, color, size))
                                                    for size in item_size_stock_check])
         else:
             item_buyma_csv_exists[item_id] = [ItemMeta(color=color,
                                                        size=size,
+                                                       shop_size=csv_parse.get_item_size_for_shop(item_id=item_id,
+                                                                                                  item_color=color,
+                                                                                                  item_buyma_size=size),
                                                        existence=by.get_item_existence(item_id, color, size))
                                               for size in item_size_stock_check]
 
@@ -57,7 +64,6 @@ for item_id in item_id_stock_check:
 # ASOSから商品情報を取得するためのオブジェクト
 asos = Asos()
 asos_item_exists_size = dict()
-asos_item_not_exists_size = dict()
 target_input_itme_id = set()
 
 # CSVから商品URLへアクセスを行い商品が存在しているサイズを取得
@@ -74,24 +80,14 @@ for item_id in item_buyma_csv_exists.keys():
             item_size = [meta.size for meta in item_buyma_csv_exists[item_id]]
 
             # ASOS内に存在している商品サイズを取得
-            asos_item_exists_size = list(set(asos.get_item_stock(url)) & set(item_size))
-
-            # 商品の在庫がない商品(ASOSから商品サイズが取得できなかったものかつCSVに商品が存在しているもの)
-            asos_item_not_exists_size = list(set(asos.get_item_nothing_stock(url)) & set(item_size))
+            asos_item_exists_size = asos.get_item_stock(url)
 
             # 在庫が存在するものに関しての在庫情報を更新する
-            for asos_item_size in asos_item_exists_size:
-                if item_meta.size == asos_item_size:
+            for asos_item_size in asos_item_exists_size.keys():
+                if item_meta.shop_size == asos_item_size:
                     # 「手元に在庫あり」の商品は在庫情報を変更しない(商品情報更新前に対象から外す)
                     if not item_buyma_csv_exists[item_id][i].existence == Existence.IN_STOCK_AT_HAND:
-                        item_buyma_csv_exists[item_id][i].existence = Existence.IN_STOCK
-
-            # 在庫が存在しないものに関しての在庫情報を更新する
-            for asos_item_size in asos_item_not_exists_size:
-                if item_meta.size == asos_item_size:
-                    # 「手元に在庫あり」の商品は在庫情報を変更しない(商品情報更新前に対象から外す)
-                    if not item_buyma_csv_exists[item_id][i].existence == Existence.IN_STOCK_AT_HAND:
-                        item_buyma_csv_exists[item_id][i].existence = Existence.OUT_OF_STOCK
+                        item_buyma_csv_exists[item_id][i].existence = asos_item_exists_size[asos_item_size]
 
         except Exception as err:
             logout.output_log_error(class_obj=None, log_message='仕入れ先商品情報取得エラー商品ID:' + str(item_id), err=err)

@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 
 import logout
 from itemscraping.siteaccess import SiteAccess
+from models import Existence
 
 
 class Asos:
@@ -28,7 +29,7 @@ class Asos:
     def __del__(self):
         del self.site_access
 
-    def get_item_stock(self, item_url) -> list:
+    def get_item_stock(self, item_url) -> dict:
         """
         在庫の取得のデータの有無の取得
         Returns:
@@ -42,51 +43,23 @@ class Asos:
         # 在庫が全て無い場合
         if not self.is_out_stock(bf):
             logout.output_log_debug(self, '商品サイズ取得できませんでした。')
-            return list()
+            return dict()
 
         # サイズの情報を取得する
         item_stock_info = bf.select('#main-size-select-0 > option')
         logout.output_log_debug(self, '抽出サイズリスト:' + str(item_stock_info))
 
         # 商品のサイズリスト
-        item_info_list = []
+        item_info_dict = dict()
 
         for item in [size for i, size in enumerate(item_stock_info) if i != 0]:
             if ' - Not available' not in item.text:
-                item_info_list.append(item.text)
+                item_info_dict[str(item.text).strip(' - Not available')] = Existence.IN_STOCK
+            else:
+                item_info_dict[str(item.text).strip(' - Not available')] = Existence.NO_INPUT
 
-        logout.output_log_debug(self, 'ASOSにて検索できたサイズ: ' + str(item_info_list))
-        return item_info_list
-
-    def get_item_nothing_stock(self, item_url) -> list:
-        """
-        在庫の取得のデータの有無の取得
-        Returns:
-            list<str>: 商品の在庫一覧
-        """
-        logout.output_log_debug(self, '仕入れ先のURL: ' + item_url)
-
-        # URLからHTMLの取得
-        bf = BeautifulSoup(self.site_access.script_compile(input_url=item_url, obj=self), 'html.parser')
-
-        # 在庫が全て無い場合
-        if not self.is_out_stock(bf):
-            logout.output_log_debug(self, '商品サイズ取得できませんでした。')
-            return list()
-
-        # サイズの情報を取得する
-        item_stock_info = bf.select('#main-size-select-0 > option')
-        logout.output_log_debug(self, '抽出サイズリスト:' + str(item_stock_info))
-
-        # 商品のサイズリスト
-        item_info_list = []
-
-        for item in item_stock_info:
-            if ' - Not available' in item.text:
-                item_info_list.append(str(item.text).strip(' - Not available'))
-
-        logout.output_log_debug(self, 'ASOSにて検索できたサイズ: ' + str(item_info_list))
-        return item_info_list
+        logout.output_log_debug(self, 'ASOSにて検索できたサイズ: ' + str(item_info_dict))
+        return item_info_dict
 
     def is_out_stock(self, bf: BeautifulSoup) -> bool:
         """

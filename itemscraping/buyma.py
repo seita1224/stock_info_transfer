@@ -39,7 +39,6 @@ class Buyma:
 
     def create_buyam_item_list(self):
         self.site_access.script_compile('https://www.buyma.com/my/sell/#/')
-        self.site_access.change_display_matter()
 
         while True:
             self.site_access.change_display_matter()
@@ -61,8 +60,7 @@ class Buyma:
             item_list_meta = self.meta['ItemOfInfo']['ItemListInfo']
 
             # 出品リストのページのHTMLの取得
-            bf = BeautifulSoup(self.site_access.script_compile(input_url=item_list_meta['ItemListURL']),
-                               'html.parser')
+            bf = BeautifulSoup(html, 'html.parser')
             logout.output_log_debug(self, '出品サイトURL:' + item_list_meta['ItemListURL'])
 
             # 商品名と商品IDを取得し、辞書型に変換する
@@ -99,23 +97,16 @@ class Buyma:
 
         return item_dict
 
-    def get_sell_item_stock(self) -> list:
+    def get_sell_item_stock(self, item_dict: dict) -> list:
         """
         Returns:
             list: 商品ごとの現在色、サイズ、在庫の有無
         """
         try:
+            # 設定の読み込み
             item_stock_meta = self.meta['ItemOfInfo']['ItemStockInfo']
 
-            # 出品リストのページへアクセス
-            self.site_access.script_compile(input_url=item_stock_meta['ItemStockURL'])
-            logout.output_log_debug(self, '出品サイトURL:' + item_stock_meta['ItemStockURL'])
-
-            # 商品の在庫情報取得箇所指定用リスト
-            item_dict = self.get_sells_item_list()
-            logout.output_log_debug(self, '商品の内容:' + str(item_dict))
-
-            # Buyma上の商品ウェジットの中の内容が入力されている
+            # Buyma上の商品ウェジットの中の内容が入力されるようの変数
             buyma_item_list = []
 
             # 商品が存在し続ける間処理を続ける

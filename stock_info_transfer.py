@@ -8,7 +8,7 @@ import logout
 from models import BuymaItem, ItemMeta
 from models.existence import Existence
 
-logout.output_log_info(None, '-------------------------------------------------------在庫情報更新処理開始-------------------------------------------------------')
+logout.output_log_info(None, ('-' * 20) + '在庫情報更新処理開始' + ('-' * 20))
 
 by = Buyma()
 csv_parse = CsvParse('./input_data/input_csv.csv')
@@ -68,7 +68,7 @@ target_input_itme_id = set()
 
 # CSVから商品URLへアクセスを行い商品が存在しているサイズを取得
 for item_id in item_buyma_csv_exists.keys():
-    for i, item_meta in enumerate(item_buyma_csv_exists[item_id]):
+    for item_index, item_meta in enumerate(item_buyma_csv_exists[item_id]):
         url = csv_parse.get_item_url_list_for_shop(item_id=item_id,
                                                    color=item_meta.color,
                                                    size=item_meta.size)
@@ -76,18 +76,20 @@ for item_id in item_buyma_csv_exists.keys():
         # URLが空の場合はCSVデータの中に色とサイズの組み合わせがない場合
         if url is None: continue
         try:
-            # ASOS内のサイズとの比較用にサイズの抽出
-            item_size = [meta.size for meta in item_buyma_csv_exists[item_id]]
-
             # ASOS内に存在している商品サイズを取得
             asos_item_exists_size = asos.get_item_stock(url)
 
-            # 在庫が存在するものに関しての在庫情報を更新する
-            for asos_item_size in asos_item_exists_size.keys():
-                if item_meta.shop_size == asos_item_size:
-                    # 「手元に在庫あり」の商品は在庫情報を変更しない(商品情報更新前に対象から外す)
-                    if not item_buyma_csv_exists[item_id][i].existence == Existence.IN_STOCK_AT_HAND:
-                        item_buyma_csv_exists[item_id][i].existence = asos_item_exists_size[asos_item_size]
+            # 「手元に在庫あり」の商品は在庫情報を変更しない(商品情報更新前に対象から外す)
+            if not item_buyma_csv_exists[item_id][item_index].existence == Existence.IN_STOCK_AT_HAND:
+                item_buyma_csv_exists[item_id][item_index].existence = asos_item_exists_size[
+                    item_buyma_csv_exists[item_id][item_index].shop_size
+                ]
+                logout.output_log_debug(None, '##csv## 商品ID:' + item_id +
+                                              ' 色' + item_buyma_csv_exists[item_id][item_index].color +
+                                              ' サイズ' + item_buyma_csv_exists[item_id][item_index].shop_size)
+                logout.output_log_debug(None, '##asos## 商品ID:' + item_id +
+                                              ' 色' + item_meta.color +
+                                              ' サイズ' + item_meta.shop_size)
 
         except Exception as err:
             logout.output_log_error(class_obj=None, log_message='仕入れ先商品情報取得エラー商品ID:' + str(item_id), err=err)
@@ -107,4 +109,4 @@ by.output_csv_nothing_stock()
 by.close()
 asos.close()
 
-logout.output_log_info(None, '-------------------------------------------------------在庫情報更新処理終了-------------------------------------------------------')
+logout.output_log_info(None, ('-' * 20) + '在庫情報更新処理終了' + ('-' * 20))

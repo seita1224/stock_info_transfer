@@ -46,7 +46,7 @@ class SiteAccess:
         options = ChromeOptions()
 
         # ヘッドレスモードを有効にする（次の行をコメントアウトすると画面が表示される）。
-        # options.add_argument('--headless')
+        options.add_argument('--headless')
         options.add_argument('--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) '
                              'AppleWebKit/537.36 (KHTML, like Gecko) '
                              'Chrome/79.0.3945.88 Safari/537.36')
@@ -283,6 +283,14 @@ class SiteAccess:
                 retry += 1
                 logout.output_log_warning(self, '在庫情報取得処理失敗　再実行します : リトライ回数:' + str(retry) +
                                                 '  商品ID : ' + item_id)
+                # 商品情報の取得に失敗した場合は一度ページの読み込みを行う
+                item_info_take_error = self.DRIVER.find_elements_by_xpath('/html/body/div[8]/div[2]/div/div[1]')
+                if len(item_info_take_error) > 0:
+                    if '色・サイズデータの取得に失敗しました。' in str(item_info_take_error[0].text):
+                        logout.output_log_warning(self, '商品ウィジットのオープンに失敗しました')
+                        self.DRIVER.refresh()
+                        time.sleep(self.__TIMEOUT_SHOT)
+
                 error = te
                 continue
 

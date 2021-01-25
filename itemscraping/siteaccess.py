@@ -18,6 +18,7 @@ from itemscraping import sitesmeta
 import logout
 import re
 
+from models.existence import Existence
 from models import BuymaItem
 
 
@@ -29,7 +30,7 @@ class SiteAccess:
     DRIVER = None
 
     # サイトアクセス処理リトライ回数
-    __RETRIES = 3
+    __RETRIES = 5
 
     # 接続処理のタイムアウト時間
     __TIMEOUT_VERY_SHOT = 3
@@ -45,7 +46,7 @@ class SiteAccess:
         options = ChromeOptions()
 
         # ヘッドレスモードを有効にする（次の行をコメントアウトすると画面が表示される）。
-        # options.add_argument('--headless')
+        options.add_argument('--headless')
         options.add_argument('--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) '
                              'AppleWebKit/537.36 (KHTML, like Gecko) '
                              'Chrome/79.0.3945.88 Safari/537.36')
@@ -110,6 +111,7 @@ class SiteAccess:
             else:
                 logout.output_log_warning(self, log_message='Asos商品ページアクセス処理失敗: 商品が売り切れている可能性があります')
                 logout.output_log_error(self, log_message='エラーの内容', err=error)
+                raise error
         else:
             # アクセスが失敗した場合にリトライを行う
             retry = 0
@@ -131,6 +133,7 @@ class SiteAccess:
                     break
             else:
                 logout.output_log_error(self, log_message='エラーの内容', err=error)
+                raise error
 
         # htmlを返す
         return self.DRIVER.page_source
@@ -257,16 +260,17 @@ class SiteAccess:
                         actions_open.click(on_element=click_item)
                         actions_open.perform()
 
-                        # 商品情報ウィジットがω表示されるまで待機
-                        WebDriverWait(self.DRIVER, self.__TIMEOUT_VERY_SHOT).until(
-                            EC.visibility_of_element_located((By.XPATH, '/html/body/div[8]/div[1]/a'))
-                        )
-
-                        time.sleep(self.__TIMEOUT_VERY_SHOT)
+                        if not 0 < retry:
+                            time.sleep(self.__TIMEOUT_VERY_SHOT)
+                        else:
+                            time.sleep(self.__TIMEOUT_SHOT)
 
                         # 商品ページのHTMLの取得
                         page_source = self.DRIVER.page_source
-                        logout.output_log_debug(self, 'HTML取得完了')
+
+                        WebDriverWait(self.DRIVER, self.__TIMEOUT_VERY_SHOT).until(
+                            EC.visibility_of_element_located((By.XPATH, '/html/body/div[8]/div[1]/a'))
+                        )
 
                         # 商品情報ウィジットを閉じる
                         actions_close = ActionChains(self.DRIVER)
@@ -274,11 +278,19 @@ class SiteAccess:
                         actions_close.move_to_element(to_element=wigit_close_button)
                         actions_close.click(on_element=wigit_close_button)
                         actions_close.perform()
-                        logout.output_log_debug(self, '商品情報ウィジットのクローズ')
 
             except TimeoutException as te:
                 retry += 1
-                logout.output_log_warning(self, '在庫情報取得処理失敗　再実行します')
+                logout.output_log_warning(self, '在庫情報取得処理失敗　再実行します : リトライ回数:' + str(retry) +
+                                                '  商品ID : ' + item_id)
+                # 商品情報の取得に失敗した場合は一度ページの読み込みを行う
+                item_info_take_error = self.DRIVER.find_elements_by_xpath('/html/body/div[8]/div[2]/div/div[1]')
+                if len(item_info_take_error) > 0:
+                    if '色・サイズデータの取得に失敗しました。' in str(item_info_take_error[0].text):
+                        logout.output_log_warning(self, '商品ウィジットのオープンに失敗しました')
+                        self.DRIVER.refresh()
+                        time.sleep(self.__TIMEOUT_SHOT)
+
                 error = te
                 continue
 
@@ -327,6 +339,10 @@ class SiteAccess:
                 actions_open.click(on_element=change_button)
                 actions_open.perform()
 
+                # テスト用
+                # image_dir = '/Users/seita/Program/python/stock_info_transfer/test_image/before_input.png'
+                # self.DRIVER.save_screenshot(image_dir)
+
                 # 商品の買い付けできる合計数量を変更する
                 self.change_item_num()
 
@@ -372,25 +388,31 @@ class SiteAccess:
 
                 # 商品入力用のオブジェクト取得(Selenium上で商品の有無のリストボックスを操作できるよう取得)
                 for item_info in input_data.item_info:
-                    input_item_xpath = '//*[@id="my"]/div[8]/div[2]/div/div[1]/table/tbody/tr[' \
-                                       + str(size_place_map[item_info.size]) + ']/td[' \
-                                       + str(color_place_dict[item_info.color]) + ']/div/select'
-                    item_inventory = self.DRIVER.find_element_by_xpath(input_item_xpath)
-                    logout.output_log_debug(self, '入力用Xpath: ' + input_item_xpath)
+                    # 「手元に在庫あり」の商品は更新対象外
+                    if item_info.existence != Existence.IN_STOCK_AT_HAND:
+                        input_item_xpath = '//*[@id="my"]/div[8]/div[2]/div/div[1]/table/tbody/tr[' \
+                                           + str(size_place_map[item_info.size]) + ']/td[' \
+                                           + str(color_place_dict[item_info.color]) + ']/div/select'
+                        item_inventory = self.DRIVER.find_element_by_xpath(input_item_xpath)
+                        logout.output_log_debug(self, '入力用Xpath: ' + input_item_xpath)
 
-                    # ここで商品の各リストボックスを扱う
-                    item_inventory.click()
-                    item_inventory.find_element_by_xpath(input_item_xpath)
-                    item_selected = Select(item_inventory)
-                    if item_info.existence:
-                        item_selected.select_by_index(0)
+                        # ここで商品の各リストボックスを扱う
+                        item_inventory.click()
+                        item_selected = Select(item_inventory)
+                        if item_info.existence == Existence.IN_STOCK:
+                            item_selected.select_by_index(0)
+                        elif item_info.existence == Existence.IN_STOCK:
+                            item_selected.select_by_index(1)
                     else:
-                        item_selected.select_by_index(1)
+                        logout.output_log_info(self, '更新対象外の商品情報: 商品ID:' + input_data.item_id + ' ' + str(item_info))
 
                 # 商品情報確定ボタン
                 update_button = self.DRIVER.find_element_by_xpath('//*[@id="my"]/div[8]/div[2]/div/div[3]/a[2]')
                 update_button.click()
                 break
+        # テスト用
+        # image_dir = '/Users/seita/Program/python/stock_info_transfer/test_image/after_input.png'
+        # self.DRIVER.save_screenshot(image_dir)
 
     def read(self):
         """
@@ -425,15 +447,16 @@ class SiteAccess:
             try:
                 # 次へボタン表示待機
                 WebDriverWait(self.DRIVER, self.__TIMEOUT_VERY_SHOT).until(
-                    EC.visibility_of_element_located((By.XPATH, '//*[@rel="next"]'))
+                    EC.visibility_of_element_located((By.XPATH, '//*[@rel="next" and text() = "次へ"]'))
                 )
                 # 画面上に「次へ」ボタンの検索
-                next_button = self.DRIVER.find_elements_by_xpath('//*[@rel="next"]')
+                next_button = self.DRIVER.find_elements_by_xpath('//*[@rel="next" and text() = "次へ"]')
 
                 # 「次へ」ボタンの存在確認
                 if next_button:
-                    for button in next_button:
-                        button.click()
+                    next_button[0].click()
+
+                time.sleep(self.__TIMEOUT_VERY_SHOT)
 
             except TimeoutException as te:
                 retry += 1
@@ -452,7 +475,7 @@ class SiteAccess:
         buyma上「次へ」ボタンの確認
         """
         # 画面上に「次へ」ボタンの検索
-        next_button = self.DRIVER.find_elements_by_xpath('//*[@rel="next"]')
+        next_button = self.DRIVER.find_elements_by_xpath('//*[@rel="next" and text() = "次へ"]')
 
         # 「次へ」ボタンの存在確認
         if next_button:
@@ -543,3 +566,11 @@ class SiteAccess:
         """
         page_state = self.DRIVER.execute_script('return document.readyState;')
         return page_state == 'complete'
+
+    def get_now_html(self):
+        """
+        現在のHTMLソースを返す
+        Returns:
+            Union[int, List[Union[int, str]]]: 現在ブラウザが参照しているHTML
+        """
+        return self.DRIVER.page_source

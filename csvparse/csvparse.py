@@ -21,11 +21,12 @@ class CsvParse:
             str: 解析を行うCSVのテキスト情報
         """
         try:
-            with open(self.__file_path, mode='r',encoding='utf-8') as f:
+            with open(self.__file_path, mode='r', encoding='utf-8') as f:
                 return f.readlines()
 
         except IOError as e:
-            logout.output_log_error(self, '指定されたパスにCSVファイルが存在しません')
+            logout.output_log_error(self, '指定されたパスにCSVファイルが存在しません', err=e)
+            raise e
 
     def create_csv_data(self) -> list:
         """
@@ -65,12 +66,14 @@ class CsvParse:
                     # 色、サイズの情報をそれぞれ格納(buyma)
                     item_meta = ItemMeta(color=item_color_list[i],
                                          size=item_buyma_size_list[i],
+                                         shop_size=item_shop_size_list[i],
                                          url=item_shop_url_list[i])
                     item_csv.item_buyma = item_meta
 
                     # サイズのみ仕入れ先のものに変更し格納(仕入れ先)
                     item_meta = ItemMeta(color=item_color_list[i],
                                          size=item_buyma_size_list[i],
+                                         shop_size=item_shop_size_list[i],
                                          url=item_shop_url_list[i])
                     item_csv.item_shop = item_meta
 
@@ -184,6 +187,23 @@ class CsvParse:
                 for item_meta in item.item_shop:
                     if item_meta.color == color and item_meta.size == size:
                         return item_meta.url
+
+    def get_item_size_for_shop(self, item_id, item_color, item_buyma_size) -> str:
+        """
+        ショップ用のsizeの取得
+        Args:
+            item_id: 商品ID
+            item_color: 商品の色
+            item_buyma_size: buymaのサイズ
+        Returns:
+            str: 仕入れ元の商品サイズ
+        """
+        for item in self.__csv_item_data:
+            if item.item_id == item_id:
+                for shop_item_list in item.item_shop:
+                    if shop_item_list.color == item_color and shop_item_list.size == item_buyma_size:
+                        return shop_item_list.shop_size
+        return ''
 
     def clear_text(self, clear_text: str):
         return clear_text.strip('\n')

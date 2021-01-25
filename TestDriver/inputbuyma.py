@@ -9,7 +9,7 @@ im.size = 'XS'
 
 im_list = [im]
 
-bi = BuymaItem(item_id='50270103',item_name='',item_info=im_list)
+bi = BuymaItem(item_id='50270103', item_name='', item_info=im_list)
 
 by = Buyma()
 

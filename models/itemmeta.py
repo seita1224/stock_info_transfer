@@ -1,10 +1,12 @@
 from __future__ import annotations
+from models.existence import Existence
 
 
 class ItemMeta:
-    def __init__(self, color='', size='', existence=False, url=''):
+    def __init__(self, color='', size='', shop_size='', existence=Existence.NO_INPUT, url=''):
         self.__color = color
         self.__size = size
+        self.__shop_size = shop_size
         self.__existence = existence
         self.__url = url
 
@@ -34,12 +36,20 @@ class ItemMeta:
         self.__size = size
 
     @property
-    def existence(self) -> bool:
+    def existence(self) -> Existence:
         return self.__existence
 
     @existence.setter
-    def existence(self, existence):
+    def existence(self, existence: Existence):
         self.__existence = existence
+
+    @property
+    def shop_size(self) -> str:
+        return self.__shop_size
+
+    @shop_size.setter
+    def shop_size(self, shop_size):
+        self.__shop_size = shop_size
 
     @property
     def url(self) -> str:

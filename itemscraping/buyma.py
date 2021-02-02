@@ -35,7 +35,6 @@ class Buyma:
         self.site_access = SiteAccess()
         self.site_access.login(site_meta='SellSite.Buyma')
         self.__buyma_item_list: List[BuymaItem] = []
-        self.create_buyam_item_list()
 
     def create_buyam_item_list(self):
         self.site_access.script_compile('https://www.buyma.com/my/sell/#/')
@@ -262,17 +261,19 @@ class Buyma:
                         return item_info.existence
         return Existence.NO_INPUT
 
-    def input_item_stock(self, input_data: BuymaItem):
+    def input_data(self, buyma_item_list: list):
         """
-        出品商品一覧から在庫情報の入力を行う
-         Args:
-             input_data(BuymaItem): 在庫情報を入力する商品
+        BuymaItemのリストは入力対象の商品として処理を行う
+        Args:
+            buyma_item_list(list): 入力対象商品
         """
-        try:
-            self.site_access.input_item_stock_for_buyma(input_data)
-            self.update_item_info(input_data)
-        except ItemIdException as err:
-            raise err
+        # 入力用商品情報の作成
+        for buyma_item in buyma_item_list:
+            # 在庫情報の入力
+            logout.output_log_info(class_obj=None, log_message='入力対象商品: ' + str(buyma_item))
+            self.site_access.input_item_stock_for_buyma(buyma_item)
+            # 商品在庫が全てない商品をCSV化する
+            # self.output_csv_nothing_stock(buyma_item)
 
     def close(self):
         """
@@ -292,7 +293,7 @@ class Buyma:
                     if item_info == buyma_item_for_update.item_info:
                         item_info[i] = buyma_item_for_update.item_info
 
-    def check_item_stock_nothing(self) -> List:
+    def check_item_stock_nothing(self, buyma_item: BuymaItem) -> List:
         """
         Buyma上の商品が全て売り切れまたは在庫が1つでも存在する場合は出品の停止、復活をさせるため
         商品在庫が全て売り切れかどうか判定する
@@ -314,13 +315,13 @@ class Buyma:
 
         return stock_exists_list
 
-    def output_csv_nothing_stock(self):
+    def output_csv_nothing_stock(self, buyma_item: BuymaItem):
         """
         商品が全て売り切れているものをCSVに出力する
         Returns:
             List(str): 売り切れている商品ID
         """
-        item_stock_list = self.check_item_stock_nothing()
+        item_stock_list = self.check_item_stock_nothing(buyma_item)
 
         # 商品が存在しないものをCSV出力する
         df = pd.DataFrame({'item_id': item_stock_list[0],

@@ -1,5 +1,5 @@
 from models import ItemMeta
-from typing import Iterable
+from typing import Iterable, List
 
 
 class CsvModel:
@@ -8,13 +8,11 @@ class CsvModel:
     """
     def __init__(self):
         self.__item_id = ''
-        self.__item_buyma = []
-        self.__item_shop = []
+        self.__item_info = []
 
     def __str__(self):
         return_str = '商品ID:' + self.__item_id + '   '
-        return_str += 'Buyma:' + str(self.__item_buyma) + '   '
-        return_str += '仕入れ先:' + str(self.__item_shop) + '   '
+        return_str += 'Buyma:' + str(self.__item_info) + '   '
         return
 
     # 商品ID
@@ -28,18 +26,14 @@ class CsvModel:
 
     # 商品メタ(buyma)
     @property
-    def item_buyma(self) -> Iterable[ItemMeta]:
-        return self.__item_buyma
+    def item_info(self) -> List[ItemMeta]:
+        return self.__item_info
 
-    @item_buyma.setter
-    def item_buyma(self, buyma_item_meta: ItemMeta):
-        self.__item_buyma.append(buyma_item_meta)
+    @item_info.setter
+    def item_info(self, item_info: ItemMeta):
+        if isinstance(item_info, ItemMeta):
+            self.__item_info.append(item_info)
+        elif isinstance(item_info, list):
+            if all(isinstance(meta, ItemMeta) for meta in item_info):
+                self.__item_info = item_info
 
-    # 商品メタ(仕入れ先)
-    @property
-    def item_shop(self) -> Iterable[ItemMeta]:
-        return self.__item_shop
-
-    @item_shop.setter
-    def item_shop(self, item_meta: ItemMeta):
-        self.__item_shop.append(item_meta)

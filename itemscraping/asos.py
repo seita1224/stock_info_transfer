@@ -7,7 +7,9 @@ from bs4 import BeautifulSoup
 
 import logout
 from itemscraping.siteaccess import SiteAccess
-from models import Existence
+from models import Existence, BuymaItem
+
+from util.exception import HtmlException
 
 
 class Asos:
@@ -41,8 +43,16 @@ class Asos:
         bf = BeautifulSoup(self.site_access.script_compile(input_url=item_url, obj=self), 'html.parser')
 
         # 在庫が全て無い場合
-        if not self.is_out_stock(bf):
-            logout.output_log_debug(self, '商品サイズ取得できませんでした。')
+        retry = 0
+        while retry < 3:
+            if not self.is_out_stock(bf):
+                logout.output_log_debug(self, '商品サイズ取得できませんでした。リトライ回数:' + str(retry))
+                retry += 1
+            else:
+                break
+
+        if retry == 3:
+            logout.output_log_warning(self, '商品全てが売り切れの可能性があります')
             return dict()
 
         # サイズの情報を取得する
@@ -54,9 +64,9 @@ class Asos:
 
         for item in [size for i, size in enumerate(item_stock_info) if i != 0]:
             if ' - Not available' not in item.text:
-                item_info_dict[str(item.text).strip(' - Not available')] = Existence.IN_STOCK
+                item_info_dict[str(item.text)] = Existence.IN_STOCK
             else:
-                item_info_dict[str(item.text).strip(' - Not available')] = Existence.NO_INPUT
+                item_info_dict[str(item.text).strip(' - Not available')] = Existence.OUT_OF_STOCK
 
         logout.output_log_debug(self, 'ASOSにて検索できたサイズ: ' + str(item_info_dict))
         return item_info_dict
@@ -75,7 +85,6 @@ class Asos:
         """
         item_info = bf.select('#main-size-select-0 > option')
         if not item_info:
-            logout.output_log_debug(self, '商品全てが売り切れ')
             return False
 
         return True
@@ -85,3 +94,33 @@ class Asos:
         ブラウザの終了
         """
         self.site_access.exit()
+
+    def update_item_stock(self, item: BuymaItem):
+        """
+        asosから引数で受け取ったbuymaItemからデータの取得を行う
+        Args:
+            item(BuymaItem): 商品情報を取得したいURLの情報が入力されているBuymaItem
+        Returns:
+            BuymaItem: 商品在庫情報が更新されているBuymaItem
+        """
+        # asosのサイトの在庫リスト
+        asos_item_list = []
+
+        item_meta_list = item.item_info
+        # 1商品の色、サイズの1つの組み合わせごとにURLアクセスを行い、在庫情報を入力する
+        for meta_index, item_meta_search_asos in enumerate(item_meta_list):
+            try:
+                asos_item_list = self.get_item_stock(item_meta_search_asos.url)
+            except HtmlException as he:
+                logout.output_log_error(he, 'urlのアクセスが失敗しました。')
+                raise he
+
+            # 引数でもらってきた商品のサイズとasosのサイズが一致している場合は在庫情報を更新する
+            for asos_item in asos_item_list.keys():
+                if item_meta_search_asos.shop_size == asos_item:
+                    item_meta_list[meta_index].existence = asos_item_list[asos_item]
+                    break
+
+        item.item_info = item_meta_list
+
+        return item

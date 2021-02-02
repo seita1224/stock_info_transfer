@@ -1,18 +1,20 @@
 from itemscraping import SiteAccess, Buyma
-from models import BuymaItem, ItemMeta
+from models import BuymaItem, ItemMeta, Existence
 
 im = ItemMeta()
 
-im.url = 'https://www.asos.com/nike/nike-mini-swoosh-oversized-hoodie-in-olive-green/prd/14878448?CTAref=We+Recommend+Carousel_3&featureref1=we+recommend+pers'
-im.color = 'rose gold'
-im.size = 'XS'
-
+im.url = 'https://www.asos.com/asos-design/asos-design-baggy-jeans-in-mid-blue-90s-wash/prd/21434410?CTARef=Saved+Items+Image'
+im.color = "mid blue 90's wash"
+im.shop_size = 'W28in L30in - W71cm L76cm'
+im.size = 'W28-L30inch'
+im.existence = Existence.IN_STOCK
 im_list = [im]
 
-bi = BuymaItem(item_id='50270103', item_name='', item_info=im_list)
+bi = BuymaItem(item_id='0062129588', item_name='', item_info=im_list)
+bi_list = [bi]
 
 by = Buyma()
 
 # 商品情報の入力
-by.input_item_stock(bi)
+by.input_data(bi_list)
 

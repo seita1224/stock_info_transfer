@@ -400,13 +400,13 @@ class SiteAccess:
                         # ここで商品の各リストボックスを扱う
                         item_inventory.click()
                         item_selected = Select(item_inventory)
-                        self.save_pic(item_inventory)
+                        # self.save_pic(item_inventory)
                         if item_info.existence == Existence.IN_STOCK:
                             item_selected.select_by_index(0)
-                            self.save_pic(item_inventory)
+                            # self.save_pic(item_inventory)
                         elif item_info.existence == Existence.OUT_OF_STOCK:
                             item_selected.select_by_index(1)
-                            self.save_pic(item_inventory)
+                            # self.save_pic(item_inventory)
                     else:
                         logout.output_log_info(self, '更新対象外の商品情報: 商品ID:' + input_data.item_id + ' ' + str(item_info))
 

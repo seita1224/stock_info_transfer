@@ -16,8 +16,8 @@ Shop:
       SiteURL: 'https://www.buyma.com/'
       LoginInfo:
         URL: 'https://www.buyma.com/login/'
-        ID: 'neohype808@gmail.com'
-        PW: 'atms12345b'
+        ID: 'paradigmshift@outlook.jp'
+        PW: 'atms12345'
         IdCssSelector: '#txtLoginId'
         PwCssSelector: '#txtLoginPass'
         LoginButtonCssSelector: '#login_do'

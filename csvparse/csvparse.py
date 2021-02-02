@@ -1,5 +1,5 @@
 import logout
-from models import CsvModel
+from models import CsvModel, BuymaItem, Existence
 from models import ItemMeta
 from typing import List
 
@@ -68,14 +68,7 @@ class CsvParse:
                                          size=item_buyma_size_list[i],
                                          shop_size=item_shop_size_list[i],
                                          url=item_shop_url_list[i])
-                    item_csv.item_buyma = item_meta
-
-                    # サイズのみ仕入れ先のものに変更し格納(仕入れ先)
-                    item_meta = ItemMeta(color=item_color_list[i],
-                                         size=item_buyma_size_list[i],
-                                         shop_size=item_shop_size_list[i],
-                                         url=item_shop_url_list[i])
-                    item_csv.item_shop = item_meta
+                    item_csv.item_info = item_meta
 
             # 戻り値用にデータの格納
             item_csv_list.append(item_csv)
@@ -112,8 +105,8 @@ class CsvParse:
         for item in self.__csv_item_data:
             if item.item_id != item_id:
                 continue
-            item_size_list = [item.item_buyma[i].size for i in range(len(item.item_buyma)) if
-                              item_color == item.item_buyma[i].color]
+            item_size_list = [item.item_info[i].size for i in range(len(item.item_info)) if
+                              item_color == item.item_info[i].color]
 
         return item_size_list
 
@@ -131,15 +124,16 @@ class CsvParse:
         # 引数の商品IDのサイズを抽出
         for item in self.__csv_item_data:
             if item.item_id == item_id:
-                item_color_list = [item.item_buyma[i].color for i in range(len(item.item_buyma))]
+                item_color_list = [item.item_info[i].color for i in range(len(item.item_info))]
 
         return item_color_list
 
-    def get_item_size_list_for_shop(self, item_id) -> list:
+    def get_item_size_list_for_shop(self, item_id, item_color: str) -> list:
         """
         商品サイズのリストを返す(仕入れ先)
         Args:
             item_id: 商品ID
+            item_color: 色
         Returns:
             list: 商品サイズリスト
         """
@@ -147,15 +141,19 @@ class CsvParse:
         item_size_list = []
 
         # 引数の商品IDのサイズを抽出
+        # 引数の商品IDのサイズを抽出
         for item in self.__csv_item_data:
-            if item.item_id == item_id:
-                item_size_list = [item.item_shop[i].size for i in range(len(item.item_shop))]
+            if item.item_id != item_id:
+                continue
+            item_size_list = [item.item_info[i].shop_size for i in range(len(item.item_info)) if
+                              item_color == item.item_info[i].color]
 
         return item_size_list
 
     def get_item_color_list_for_shop(self, item_id) -> list:
         """
         商品色のリストを返す(仕入れ先)
+        今後ショップサイズが増えた時ように残しておく
         Args:
             item_id: 商品ID
         Returns:
@@ -167,11 +165,11 @@ class CsvParse:
         # 引数の商品IDのサイズを抽出
         for item in self.__csv_item_data:
             if item.item_id == item_id:
-                item_color_list = [item.item_shop[i].color for i in range(len(item.item_shop))]
+                item_color_list = [item.item_info[i].color for i in range(len(item.item_info))]
 
         return item_color_list
 
-    def get_item_url_list_for_shop(self, item_id: str, color: str, size: str) -> str:
+    def get_item_url_for_shop(self, item_id: str, color: str, size: str) -> str:
         """
         商品URLのリストを返す
         Args:
@@ -184,8 +182,8 @@ class CsvParse:
         # 引数の商品IDのサイズを抽出
         for item in self.__csv_item_data:
             if item.item_id == item_id:
-                for item_meta in item.item_shop:
-                    if item_meta.color == color and item_meta.size == size:
+                for item_meta in item.item_info:
+                    if item_meta.color == color and item_meta.shop_size == size:
                         return item_meta.url
 
     def get_item_size_for_shop(self, item_id, item_color, item_buyma_size) -> str:
@@ -200,10 +198,34 @@ class CsvParse:
         """
         for item in self.__csv_item_data:
             if item.item_id == item_id:
-                for shop_item_list in item.item_shop:
+                for shop_item_list in item.item_info:
                     if shop_item_list.color == item_color and shop_item_list.size == item_buyma_size:
                         return shop_item_list.shop_size
         return ''
 
-    def clear_text(self, clear_text: str):
-        return clear_text.strip('\n')
+    def clear_text(self, target_text: str) -> str:
+        return target_text.strip('\n')
+
+    def create_buyma_item(self):
+        """
+        csvの中身をBuymaItemクラスとして返す
+        Returns:
+            List[BuymaItem]: csvの中身
+        """
+        buyma_item_list = []
+        item_id_list = self.get_item_id_list()
+        for item_index, item_id in enumerate(item_id_list):
+            buyma_item_list.append(BuymaItem(item_id=item_id, item_name='', item_info=[]))
+            item_color_for_buyma_list = set(self.get_item_color_list_for_buyma(item_id=item_id))
+            for item_color in item_color_for_buyma_list:
+                item_buyma_size_list = self.get_item_size_list_for_buyma(item_id=item_id, item_color=item_color)
+                item_shop_size_list = self.get_item_size_list_for_shop(item_id=item_id, item_color=item_color)
+                for item_buyma_size, item_shop_size in zip(item_buyma_size_list, item_shop_size_list):
+                    item_meta = ItemMeta(color=item_color,
+                                         size=item_buyma_size,
+                                         shop_size=item_shop_size,
+                                         url=self.get_item_url_for_shop(item_id=item_id, color=item_color, size=item_shop_size),
+                                         existence=Existence.NO_INPUT)
+
+                    buyma_item_list[item_index].item_info = item_meta
+        return buyma_item_list

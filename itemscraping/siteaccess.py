@@ -18,8 +18,10 @@ from itemscraping import sitesmeta
 import logout
 import re
 
+
 from models.existence import Existence
 from models import BuymaItem
+from util.exception import HtmlException
 
 
 class SiteAccess:
@@ -42,11 +44,14 @@ class SiteAccess:
         """
         サイトアクセスの準備
         """
+        # テスト時にスクリーンショットファイル名のインデックス
+        self.__TEST_INDEX = 0
+
         # ブラウザのオプションを格納する変数をもらってきます。
         options = ChromeOptions()
 
         # ヘッドレスモードを有効にする（次の行をコメントアウトすると画面が表示される）。
-        options.add_argument('--headless')
+        # options.add_argument('--headless')
         options.add_argument('--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) '
                              'AppleWebKit/537.36 (KHTML, like Gecko) '
                              'Chrome/79.0.3945.88 Safari/537.36')
@@ -101,11 +106,11 @@ class SiteAccess:
                     retry += 1
                     logout.output_log_warning(self, 'Asos商品ページアクセス処理失敗　再実行します')
                     error = te
-                    # 商品ページへアクセス
-                    self.DRIVER.get(input_url)
-                    WebDriverWait(self.DRIVER, self.__TIMEOUT_MIDDLE).until(EC.visibility_of_all_elements_located)
                     continue
                 else:
+                    if str(self.DRIVER.page_source) == '':
+                        raise HtmlException('htmlソースが取得できません')
+
                     logout.output_log_info(self, 'Asos商品ページアクセス処理成功')
                     break
             else:
@@ -129,7 +134,7 @@ class SiteAccess:
                     WebDriverWait(self.DRIVER, self.__TIMEOUT_MIDDLE).until(EC.visibility_of_all_elements_located)
                     continue
                 else:
-                    logout.output_log_info(self, 'Asos商品ページアクセス処理成功')
+                    logout.output_log_info(self, 'URLアクセス成功')
                     break
             else:
                 logout.output_log_error(self, log_message='エラーの内容', err=error)
@@ -339,10 +344,6 @@ class SiteAccess:
                 actions_open.click(on_element=change_button)
                 actions_open.perform()
 
-                # テスト用
-                # image_dir = '/Users/seita/Program/python/stock_info_transfer/test_image/before_input.png'
-                # self.DRIVER.save_screenshot(image_dir)
-
                 # 商品の買い付けできる合計数量を変更する
                 self.change_item_num()
 
@@ -399,10 +400,13 @@ class SiteAccess:
                         # ここで商品の各リストボックスを扱う
                         item_inventory.click()
                         item_selected = Select(item_inventory)
+                        self.save_pic(item_inventory)
                         if item_info.existence == Existence.IN_STOCK:
                             item_selected.select_by_index(0)
-                        elif item_info.existence == Existence.IN_STOCK:
+                            self.save_pic(item_inventory)
+                        elif item_info.existence == Existence.OUT_OF_STOCK:
                             item_selected.select_by_index(1)
+                            self.save_pic(item_inventory)
                     else:
                         logout.output_log_info(self, '更新対象外の商品情報: 商品ID:' + input_data.item_id + ' ' + str(item_info))
 
@@ -410,9 +414,6 @@ class SiteAccess:
                 update_button = self.DRIVER.find_element_by_xpath('//*[@id="my"]/div[8]/div[2]/div/div[3]/a[2]')
                 update_button.click()
                 break
-        # テスト用
-        # image_dir = '/Users/seita/Program/python/stock_info_transfer/test_image/after_input.png'
-        # self.DRIVER.save_screenshot(image_dir)
 
     def read(self):
         """
@@ -574,3 +575,18 @@ class SiteAccess:
             Union[int, List[Union[int, str]]]: 現在ブラウザが参照しているHTML
         """
         return self.DRIVER.page_source
+
+    def save_pic(self, browser_location=None):
+        # テスト用
+        image_dir = '/Users/seita/Program/python/stock_info_transfer/test_image/test_screenshot' + str(self.__TEST_INDEX) + '.png'
+        if browser_location is None:
+            self.DRIVER.save_screenshot(image_dir)
+        else:
+            browser_location.screenshot(image_dir)
+        self.increment_index_for_test_pic()
+
+    def increment_index_for_test_pic(self, reset=True):
+        if not reset:
+            pass
+        else:
+            self.__TEST_INDEX += 1

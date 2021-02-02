@@ -1,9 +1,32 @@
+from copy import deepcopy
+
 import logout
+from csvparse import CsvParse
 from itemscraping import Asos
 
 asos = Asos()
+csv_parse = CsvParse('/Users/seita/Program/python/stock_info_transfer/TestDriver/TestData/testdata.csv')
+buyma_item_list = csv_parse.create_buyma_item()
 
-item_list = asos.get_item_stock('https://www.asos.com/nike/nike-mini-swoosh-oversized-cropped-grey-zip-through-hoodie'
-                                '/prd/20121315?ctaref=recently+viewed')
+buyma_item_update_list = []
+before = deepcopy(buyma_item_list)
 
-logout.output_log_debug(None, str(item_list))
+print('更新前')
+for buyma_item in buyma_item_list:
+    print(buyma_item)
+
+for buyma_item in buyma_item_list:
+    buyma_item_update_list.append(asos.update_item_stock(buyma_item))
+
+after = buyma_item_update_list
+
+for buyma_item in buyma_item_list:
+    print(buyma_item)
+print('更新後')
+
+for b, a in zip(before, after):
+    b_s = str(b)
+    a_s = str(a)
+    if a == b:
+        print('更新前:', b_s)
+        print('更新後:', a_s)

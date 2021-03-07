@@ -71,6 +71,18 @@ class SiteAccess:
         # ページのjavascriptが実行し終わるまでの待機時間(second)
         self.DRIVER.set_script_timeout(self.__TIMEOUT_LONG)
 
+        # seleniumのログレベルの変更
+        options.add_argument("--log-level=3")
+
+        # seleniumのログ出力を消す
+        options.add_argument("--silent")
+
+        # 証明書エラーの回避を行う
+        options.add_argument('--ignore-certificate-errors')
+
+        # selenium自体がサポートされていないコマンドラインのフラグを使用しているためそのエラーを回避するためのもの
+        options.add_argument('--ignore-ssl-errors')
+
     def script_compile(self, input_url=None, obj=None):
         """
         javascriptコンパイル済みのhtmlを返します。

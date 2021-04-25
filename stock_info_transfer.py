@@ -19,6 +19,6 @@ for buyma_item in buyma_item_list:
 
 by = Buyma()
 
-by.input_data(buyma_item_list=buyma_item_list)
+by.input_data(buyma_item_list=buyma_item_update_list)
 
 logout.output_log_info(None, ('-' * 20) + '在庫情報更新処理終了' + ('-' * 20))

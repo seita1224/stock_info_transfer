@@ -2,8 +2,8 @@ beautifulsoup4==4.9.3 \
     --hash=sha256:4c98143716ef1cb40bf7f39a8e3eec8f8b009509e74904ba3a7b315431577e35 \
     --hash=sha256:fff47e031e34ec82bf17e00da8f592fe7de69aeea38be00523c04623c04fb666 \
     --hash=sha256:84729e322ad1d5b4d25f805bfa05b902dd96450f43842c4e99067d5e1369eb25
-chromedriver-binary==91.0.4472.19.0 \
-    --hash=sha256:6256e902d470dce9f046d171ffb7b6f3060c21fc0625cc149f666f71fd3ae077
+chromedriver-binary==90.0.4430.24.0 \
+    --hash=sha256:2f59290493cb66fb9a6a28590a68dc8cf40773224a52f0e258ab4fc1c6785b33
 numpy==1.20.0; python_version >= "3.7" and python_full_version >= "3.7.1" \
     --hash=sha256:89bd70c9ad540febe6c28451ba225eb4e49d27f64728357f512c808002325dfa \
     --hash=sha256:1264c66129f5ef63187649dd43f1ca59532e8c098723643336a85131c0dcce3f \

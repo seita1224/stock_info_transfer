@@ -96,9 +96,6 @@ class Asos:
         Returns:
             BuymaItem: 商品在庫情報が更新されているBuymaItem
         """
-        # asosのサイトの在庫リスト
-        asos_item_list = []
-
         item_meta_list = item.item_info
         # 1商品の色、サイズの1つの組み合わせごとにURLアクセスを行い、在庫情報を入力する
         for meta_index, item_meta_search_asos in enumerate(item_meta_list):
@@ -112,7 +109,7 @@ class Asos:
             if asos_item_taple[1]:
                 for asos_item in asos_item_taple[0].keys():
                     if item_meta_search_asos.shop_size == asos_item:
-                        item_meta_list[meta_index].existence = asos_item_list[asos_item]
+                        item_meta_list[meta_index].existence = asos_item_taple[0][asos_item]
                         break
             else:
                 item_meta_list[meta_index].existence = Existence.OUT_OF_STOCK

@@ -106,4 +106,5 @@ venv.bak/
 poetry.lock
 .vscode/launch.json
 .vscode/settings.json
-log/stock_info_transfer.log
+log/
+input_data/

@@ -2,4 +2,5 @@ from scrape.base_scraper import BaseScraper
 
 
 class AsosScraper(BaseScraper):
-    pass
+    def get_stock(self, dict) -> dict:
+        return None

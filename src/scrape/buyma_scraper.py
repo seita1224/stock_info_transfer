@@ -2,4 +2,5 @@ from scrape.base_scraper import BaseScraper
 
 
 class BuymaScraper(BaseScraper):
-    pass
+    def change_stock(self, dict) -> None:
+        pass

@@ -1,7 +1,7 @@
 from controller.inventory_manager import InventoryManager
 
 def main():
-    pass
+    InventoryManager().run()
 
 if __name__ == '__main__':
     main()

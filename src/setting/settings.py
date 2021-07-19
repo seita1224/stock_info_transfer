@@ -22,10 +22,8 @@ def parse_str_to_bool(parse_word: str) -> bool:
 conf = configparser.ConfigParser()
 conf.read('../settings.ini')
 
-input_file_path = get_abspath(conf['input']['file_path'])
-search_word = conf['input']['search_word']
-max_count = conf['input']['max_count']
-exec_time = conf['input']['exec_time']
+input_csv_path = get_abspath(conf['input']['input_csv_path'])
+save_csv_path = get_abspath(conf['input']['save_csv_path'])
 
 chromedriver_path = get_chromedriver_path()
 window_display = parse_str_to_bool(conf['chrome']['window_display'])

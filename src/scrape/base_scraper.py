@@ -1,7 +1,11 @@
+from typing import List
+
 from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.remote.webelement import WebElement
 
 from exception.exceptions import AppRuntimeException
 from setting import settings
@@ -9,8 +13,13 @@ from setting import settings
 
 ACCESS_RETRY_LIMIT = 3
 
+class ElementNotFoundException(AppRuntimeException):
+    pass
+
+
 class BaseScraper:
     driver = None
+    web_wait = None
     
     def __init__(self) -> None:
         self.__open_driver()
@@ -44,7 +53,9 @@ class BaseScraper:
         options.add_argument('--lang=ja')
         options.add_argument('--blink-settings=imagesEnabled=false')
         self.driver = Chrome(executable_path=settings.chromedriver_path, options=options)
-        self.driver.implicitly_wait(1)
+        self.driver.implicitly_wait(5)
+
+        self.web_wait = WebDriverWait(self.driver, 5)
 
     def __close_driver(self) -> None:
         """　Chromeドライバーの削除処理
@@ -52,22 +63,59 @@ class BaseScraper:
         self.driver.close()
         self.driver.quit()
     
-
-    def scrape_deco(func):
-        """　サイトアクセスを再試行するデコレーターメソッド
-        　　　AppRuntimeExceptionが発生した場合、再施行する（`ACCESS_RETRY_LIMIT`まで）
+    def get_element_by_xpath(self, xpath: str) -> WebElement:
+        """ 単一のelementを取得する（xpath指定）
         Args:
-            func: 
+            xpath (str): 取得するElementのxpath
+
+        Raises:
+            ElementNotFoundException: 現在のページでElementが見つからなかった場合に発生
+
+        Returns:
+            WebElement: 取得したElement
         """
-        def wrapper(*args, **kwargs):
-            for _ in range(ACCESS_RETRY_LIMIT):
-                try:
-                    func(*args, **kwargs)
-                except AppRuntimeException as e:
-                    error = e
-                else:
-                    break
-            else:
-                raise error
-        
-        return wrapper
+        try:
+            element = self.web_wait.until(EC.visibility_of_element_located((By.XPATH, xpath)))
+
+        except TimeoutException:
+            # TODO 適切なメッセージの検討
+            raise ElementNotFoundException(f'xpath: {xpath}')
+
+        return element
+    
+    def get_elements_by_xpath(self, xpath: str) -> List[WebElement]:
+        """ 複数のelementをListで取得する（xpath指定）
+
+        Args:
+            xpath (str): 取得するElementのxpath
+
+        Raises:
+            ElementNotFoundException: 現在のページでElementが見つからなかった場合に発生
+
+        Returns:
+            WebElement: 取得したElement
+        """
+        try:
+            elements = self.web_wait.until(EC.visibility_of_all_elements_located((By.XPATH, xpath)))
+        except TimeoutException:
+            # TODO 適切なメッセージの検討
+            raise ElementNotFoundException(f'xpath: {xpath}')
+
+        return elements
+    
+def scrape_retry(func):
+    """　サイトアクセスを再試行するデコレーターメソッド
+    　　　Exceptionが発生した場合、再施行する（`ACCESS_RETRY_LIMIT`まで）
+    Args:
+        func: 
+    """
+    def wrapper(*args, **kwargs):
+        for _ in range(ACCESS_RETRY_LIMIT):
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                error = e
+        else:
+            raise error
+    
+    return wrapper

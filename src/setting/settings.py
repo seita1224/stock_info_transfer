@@ -27,3 +27,5 @@ save_csv_path = get_abspath(conf['input']['save_csv_path'])
 
 chromedriver_path = get_chromedriver_path()
 window_display = parse_str_to_bool(conf['chrome']['window_display'])
+
+buyma_max_sales_count = conf['buyma']['max_sales_count']

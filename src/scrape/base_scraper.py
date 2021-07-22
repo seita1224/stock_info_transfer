@@ -7,13 +7,13 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webelement import WebElement
 
-from exception.exceptions import AppRuntimeException
+from exception.exceptions import AppException
 from setting import settings
 
 
 ACCESS_RETRY_LIMIT = 3
 
-class ElementNotFoundException(AppRuntimeException):
+class ElementNotFoundException(AppException):
     pass
 
 

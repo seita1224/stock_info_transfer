@@ -87,10 +87,10 @@ class InventoryManager():
         Args:
             buyma_id (str): 在庫を反映するbuymaの商品ID
             color (str): 在庫を反映するbuymaの商品カラー
-            stock_data (Dict[str, bool]): ASOSから取得した在庫情報
+            stock_data (Dict[str, bool]): 仕入れ先から取得した在庫情報
         """
-
-        self.buyma.run(buyma_id, color, stock_data)
+        if stock_data:
+            self.buyma.run(buyma_id, color, stock_data)
 
     def run(self):
         """ エントリポイント
@@ -136,7 +136,8 @@ class InventoryManager():
                         ] = e.message
                     continue
 
-                # 処理したキーをセーブキーに追加する
+                # 正常に処理したキーをセーブキーに追加する。（設定ミスがある場合は追加しない。）
+                # TODO 設定ミスがあった場合も追加されるバグを修正。
                 # TODO 都度新しいオブジェクトを作っているため、負荷がかかりそう。
                 save_keys = save_keys.append({'id_buyma': row[0], 'url_supplier': row[1]}, ignore_index=True)
                 

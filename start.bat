@@ -1,5 +1,6 @@
 @echo off
-python stock_info_transfer.py
+cd src
+python inventory.py
 
 echo;
 

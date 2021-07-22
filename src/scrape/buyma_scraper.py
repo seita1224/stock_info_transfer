@@ -116,7 +116,7 @@ class BuymaScraper(BaseScraper):
                 # サイズの設定ミスの場合、ここでエラーとなる
                 mistake_size_list.append(buyma_size)
             
-            if selected.text == "手元に在庫あり":
+            if selected.get_attribute('value') == "2":
                 continue
 
             select_element = self.get_element_by_xpath(select_xpath)

@@ -9,6 +9,11 @@ from scrape.base_scraper import BaseScraper, ElementNotFoundException, scrape_re
 
 class AsosScraper(BaseScraper):
 
+    def go_top_page(self) -> None:
+        """ AsosのTopページに移動する
+        """
+        self.driver.get('https://www.asos.com/')
+
     def is_out_stock_all_size(self) -> bool:
         """ 在庫切れかを判断する
 

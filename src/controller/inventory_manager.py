@@ -14,6 +14,7 @@ class InventoryManager():
 
     def __init__(self) -> None:
         self.asos = AsosScraper()
+        self.asos.go_top_page()
         self.buyma = BuymaScraper()
         self.buyma.login()
 

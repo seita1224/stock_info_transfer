@@ -113,22 +113,31 @@ class InventoryManager():
                 size_data = target_data[['size_supplier', 'size_buyma']]
                 try:
                     # 買い付け先の在庫を取得
-                    stock_data, mistake_size_list = self.get_stock_from_supplier(url_supplier, size_data)
-                    if mistake_size_list:
+                    stock_data, mistake_asos_size_list = self.get_stock_from_supplier(url_supplier, size_data)
+                    if mistake_asos_size_list:
                         # Asosのサイズ設定ミスをinput.csvに出力
                         input_df.loc[
                             (input_df['id_buyma'] == id_buyma)
                             & (input_df['url_supplier'] == url_supplier)
                             & (input_df['color_info_buyma'] == color_info_buyma)
-                            & (input_df['size_supplier'].isin(mistake_size_list))
+                            & (input_df['size_supplier'].isin(mistake_asos_size_list))
                             , 'error'
                             ] = 'size_supplier mistake'
 
                     # buymaへ在庫反映を行う
-                    self.change_stock_to_seller(id_buyma, color_info_buyma, stock_data)
+                    mistake_buyma_size_list = self.change_stock_to_seller(id_buyma, color_info_buyma, stock_data)
+                    if mistake_buyma_size_list:
+                        input_df.loc[
+                            (input_df['id_buyma'] == id_buyma)
+                            & (input_df['url_supplier'] == url_supplier)
+                            & (input_df['color_info_buyma'] == color_info_buyma)
+                            & (input_df['size_buyma'].isin(mistake_buyma_size_list))
+                            , 'error'
+                            ] = 'size_buyma mistake'
+
                 except AppRuntimeException as e:
                     # TODO 
-                    # input_dataに問題内容を列として追加。最後にコンソールにinputdataをみるよう出力する。
+                    # 最後にコンソールにinputdataをみるよう出力する。
                     input_df.loc[
                         (input_df['id_buyma'] == id_buyma)
                         & (input_df['url_supplier'] == url_supplier)

@@ -35,7 +35,7 @@ class BuymaScraper(BaseScraper):
             password (str): パスワード
         """
         self.driver.get('https://www.buyma.com/login/')
-        # TODO seleniumでログインを行うとエラーとなることが
+        # seleniumでログインを行うとエラーとなることが
         # 頻発するため、手動でのログインを促す。
         input('buymaへログインした後にEnterを押してください。')
 
@@ -68,18 +68,29 @@ class BuymaScraper(BaseScraper):
         except ElementNotFoundException:
             return False
     
-    def change_max_seles_count(self, max_seles_count: str):
+    def change_max_seles_count(self, max_seles_count: str) -> True:
         """ 買付可能数の変更
 
         Args:
             max_seles_count (str): 設定する買付可能数
+
+        Returns:
+            bool: 買い付け可能数の変更完了の是非(True/False(変更できなかった。（出品停止処理が必要）)) 
         """
         max_seles_element = self.get_element_by_xpath('//*[@class="js-colorsize-capacity-amount sell-unit-summary-input"]')
 
         # 対象の商品が全て在庫なしの場合、非活性のため入力しない
-        if max_seles_element.is_enabled:
+        # TODO 出品停止処理にすべきものがFalseとなる。フラグを立てるなどして出品停止処理へ
+        if max_seles_element.is_enabled():
             max_seles_element.clear()
             max_seles_element.send_keys(max_seles_count)
+            
+            # 暫定処理
+            return True
+
+        else:
+            # 暫定処理
+            return False
 
 
     def change_stock(self, color: str, stock_data: Dict[str, bool]) -> List[str]:
@@ -115,7 +126,7 @@ class BuymaScraper(BaseScraper):
             except ElementNotFoundException:
                 # サイズの設定ミスの場合、ここでエラーとなる
                 mistake_size_list.append(buyma_size)
-            
+                continue
             if selected.get_attribute('value') == "2":
                 continue
 
@@ -166,6 +177,11 @@ class BuymaScraper(BaseScraper):
                 raise BuymaIdNotFoundException('buyma_id mistake')
 
         mistake_size_list = self.change_stock(color, stock_data)
-        self.change_max_seles_count(settings.buyma_max_sales_count)
-        self.save_change_stock()
-        # TODO 出品停止処理の実装/出品再開処理も
+        is_stock = self.change_max_seles_count(settings.buyma_max_sales_count)
+        if is_stock:
+            self.save_change_stock()
+        else:
+            # TODO 出品停止処理の実装　暫定処理
+            print(f'Buyma_id={buyma_id}を出品停止にしてください。')
+
+        return mistake_size_list

@@ -103,6 +103,8 @@ class InventoryManager():
         try:
             for _, row in keys.iterrows():
                 id_buyma, url_supplier, color_info_buyma = row[0], row[1], row[2]
+
+                is_save_skip = False
                 
                 # キーが一致するデータ（複数）を取得する
                 target_data = input_df[
@@ -123,6 +125,8 @@ class InventoryManager():
                             & (input_df['size_supplier'].isin(mistake_asos_size_list))
                             , 'error'
                             ] = 'size_supplier mistake'
+                        
+                        is_save_skip = True
 
                     # buymaへ在庫反映を行う
                     mistake_buyma_size_list = self.change_stock_to_seller(id_buyma, color_info_buyma, stock_data)
@@ -134,6 +138,8 @@ class InventoryManager():
                             & (input_df['size_buyma'].isin(mistake_buyma_size_list))
                             , 'error'
                             ] = 'size_buyma mistake'
+                        
+                        is_save_skip = True
 
                 except AppRuntimeException as e:
                     # TODO 
@@ -147,14 +153,13 @@ class InventoryManager():
                     continue
 
                 # 正常に処理したキーをセーブキーに追加する。（設定ミスがある場合は追加しない。）
-                # TODO 設定ミスがあった場合も追加されるバグを修正。
                 # TODO 都度新しいオブジェクトを作っているため、負荷がかかりそう。
-                save_keys = save_keys.append({'id_buyma': row[0], 'url_supplier': row[1]}, ignore_index=True)
+                if not is_save_skip:
+                    save_keys = save_keys.append({'id_buyma': id_buyma, 'url_supplier': url_supplier, 'color_info_buyma': url_supplier}, ignore_index=True)
                 
-            # TODO この判定がうまく機能していない
             if keys[~keys.isin(save_keys.to_dict(orient='list')).all(1)].empty:
                 # 全て処理のキーを処理した場合はセーブデータを空にする。
-                save_keys = pd.DataFrame(index=[], columns=['id_buyma', 'url_supplier'])
+                save_keys = pd.DataFrame(index=[], columns=['id_buyma', 'url_supplier', 'color_info_buyma'])
         
         finally:
             # 次回途中から処理開始できるよう、セーブキーを保存する

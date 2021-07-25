@@ -46,7 +46,7 @@ class BuymaScraper(BaseScraper):
             bool: 次へボタンの有無(True（有り）/ False(無し))
         """
         try:
-            next_button = self.get_element_by_xpath('//*[@rel="next"]')
+            next_button = self.get_element_by_xpath_short_wait('//*[@rel="next"]')
             next_button.click()
             return True
         except ElementNotFoundException:
@@ -62,7 +62,7 @@ class BuymaScraper(BaseScraper):
             bool: 現在のページに一致するbuymaの商品idが無い場合、False
         """
         try:
-            edhit_button = self.get_element_by_xpath(f'//*[@class="js_item_colorsize_edit"]/*[@data-syo-id="{buyma_id}"]')
+            edhit_button = self.get_element_by_xpath_short_wait(f'//*[@class="js_item_colorsize_edit"]/*[@data-syo-id="{buyma_id}"]')
             edhit_button.click()
             return True
         except ElementNotFoundException:
@@ -77,7 +77,7 @@ class BuymaScraper(BaseScraper):
         Returns:
             bool: 買い付け可能数の変更完了の是非(True/False(変更できなかった。（出品停止処理が必要）)) 
         """
-        max_seles_element = self.get_element_by_xpath('//*[@class="js-colorsize-capacity-amount sell-unit-summary-input"]')
+        max_seles_element = self.get_element_by_xpath_short_wait('//*[@class="js-colorsize-capacity-amount sell-unit-summary-input"]')
 
         # 対象の商品が全て在庫なしの場合、非活性のため入力しない
         # TODO 出品停止処理にすべきものがFalseとなる。フラグを立てるなどして出品停止処理へ
@@ -122,7 +122,7 @@ class BuymaScraper(BaseScraper):
 
             # 手元に在庫ありが選択されている場合は編集しない
             try:
-                selected = self.get_element_by_xpath(select_xpath + '/option[@selected]')
+                selected = self.get_element_by_xpath_short_wait(select_xpath + '/option[@selected]')
             except ElementNotFoundException:
                 # サイズの設定ミスの場合、ここでエラーとなる
                 mistake_size_list.append(buyma_size)

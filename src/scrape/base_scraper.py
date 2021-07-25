@@ -55,13 +55,23 @@ class BaseScraper:
         self.driver = Chrome(executable_path=settings.chromedriver_path, options=options)
         self.driver.implicitly_wait(5)
 
-        self.web_wait = WebDriverWait(self.driver, 5)
+        self.web_wait = WebDriverWait(self.driver, 10)
 
     def __close_driver(self) -> None:
         """　Chromeドライバーの削除処理
         """
         self.driver.close()
         self.driver.quit()
+    
+    def get_element_by_xpath_short_wait(self, xpath: str) -> WebElement:
+        try:
+            element = WebDriverWait(self.driver, 1).until(EC.visibility_of_element_located((By.XPATH, xpath)))
+
+        except TimeoutException:
+            # TODO 適切なメッセージの検討
+            raise ElementNotFoundException(f'xpath: {xpath}')
+
+        return element
     
     def get_element_by_xpath(self, xpath: str) -> WebElement:
         """ 単一のelementを取得する（xpath指定）

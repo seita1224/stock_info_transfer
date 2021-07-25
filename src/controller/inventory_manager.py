@@ -155,7 +155,7 @@ class InventoryManager():
                 # 正常に処理したキーをセーブキーに追加する。（設定ミスがある場合は追加しない。）
                 # TODO 都度新しいオブジェクトを作っているため、負荷がかかりそう。
                 if not is_save_skip:
-                    save_keys = save_keys.append({'id_buyma': id_buyma, 'url_supplier': url_supplier, 'color_info_buyma': url_supplier}, ignore_index=True)
+                    save_keys = save_keys.append({'id_buyma': id_buyma, 'url_supplier': url_supplier, 'color_info_buyma': color_info_buyma}, ignore_index=True)
                 
             if keys[~keys.isin(save_keys.to_dict(orient='list')).all(1)].empty:
                 # 全て処理のキーを処理した場合はセーブデータを空にする。

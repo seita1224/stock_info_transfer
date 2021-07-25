@@ -4,8 +4,13 @@ from numpy import e
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+from exception.exceptions import AppRuntimeException
 
 from scrape.base_scraper import BaseScraper, ElementNotFoundException, scrape_retry
+
+class IllegalURLException(AppRuntimeException):
+    pass
+
 
 class AsosScraper(BaseScraper):
 
@@ -41,7 +46,11 @@ class AsosScraper(BaseScraper):
         Returns:
             Tuple[Dict[str, bool], List[str]]: ({'Buymaのサイズ表記': '在庫の有無(True(有り)/False(無し))'}, 設定誤りのサイズリスト)
         """
-        elements = self.get_elements_by_xpath('//*[@id="main-size-select-0"]/option')
+        try:
+            elements = self.get_elements_by_xpath('//*[@id="main-size-select-0"]/option')
+        except ElementNotFoundException:
+            raise IllegalURLException('url_supplier mistake')
+        
         # {'Asosのsize表記': '取得した在庫有無（True）'}
         asos_stock = {element.text.strip(' - Not available'): bool(element.is_enabled()) for element in elements}
 

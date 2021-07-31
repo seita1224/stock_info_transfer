@@ -65,7 +65,7 @@ class InventoryManager():
         
         return input_df, save_df
 
-    def get_stock_from_supplier(self, url: str, size_data_df: pd.DataFrame) -> Tuple[Dict[str, bool], List[str]]:
+    def get_stock_from_supplier(self, id_buyma: str, url_supplier:str, color_info_buyma:str, input_df: pd.DataFrame) -> Tuple[Dict[str, bool], bool]:
         """ 買い付け先から在庫取得する
 
         Args:
@@ -76,13 +76,35 @@ class InventoryManager():
             Tuple[Dict[str, bool], List[str]]: 
                 ({'Buymaのサイズ表記': '在庫の有無(True(有り)/False(無し))'}, 設定誤りのサイズリスト)
         """
-        # {'仕入れ先のsize表記': 'buymaのsize表記'}のdictを作成する
-        size_data = {row[0]: row[1] for _, row in size_data_df.iterrows()}
+                        # キーが一致するデータ（複数）を取得する
+        target_data = input_df[
+            (input_df['id_buyma'] == id_buyma)
+            & (input_df['url_supplier'] == url_supplier)
+            & (input_df['color_info_buyma'] == color_info_buyma)]
+                
+        size_data = target_data[['size_supplier', 'size_buyma']]
 
-        return self.asos.run(url, size_data)
+        # {'仕入れ先のsize表記': 'buymaのsize表記'}のdictを作成する
+        size_data = {row[0]: row[1] for _, row in size_data.iterrows()}
+
+        stock_data, mistake_list = self.asos.run(url_supplier, size_data)
+        
+        mistake_flg = False
+        if mistake_list:
+            # Asosのサイズ設定ミスをinputに出力
+            input_df.loc[
+                (input_df['id_buyma'] == id_buyma)
+                & (input_df['url_supplier'] == url_supplier)
+                & (input_df['color_info_buyma'] == color_info_buyma)
+                & (input_df['size_supplier'].isin(mistake_list))
+                , 'error'
+                ] = 'size_supplier mistake'
+            mistake_flg = True
+
+        return stock_data, mistake_flg
 
     
-    def change_stock_to_seller(self, buyma_id: str, color: str, stock_data: Dict[str, bool]) -> None:
+    def change_stock_to_seller(self, buyma_id: str, color: str, stock_data: Dict[str, bool], input_df: pd.DataFrame) -> bool:
         """ 在庫を反映する
 
         Args:
@@ -90,8 +112,23 @@ class InventoryManager():
             color (str): 在庫を反映するbuymaの商品カラー
             stock_data (Dict[str, bool]): 仕入れ先から取得した在庫情報
         """
-        if stock_data:
-            self.buyma.run(buyma_id, color, stock_data)
+        if not stock_data:
+            return
+        
+        mistake_list = self.buyma.run(buyma_id, color, stock_data)
+
+        mistake_flg = False
+        if mistake_list:
+            input_df.loc[
+                (input_df['id_buyma'] == buyma_id)
+                & (input_df['color_info_buyma'] == color)
+                & (input_df['size_buyma'].isin(mistake_list))
+                , 'error'
+                ] = 'size_buyma mistake'
+            
+            mistake_flg = True
+
+        return mistake_flg
 
     def run(self):
         """ エントリポイント
@@ -106,39 +143,14 @@ class InventoryManager():
 
                 is_save_skip = False
                 
-                # キーが一致するデータ（複数）を取得する
-                target_data = input_df[
-                    (input_df['id_buyma'] == id_buyma)
-                     & (input_df['url_supplier'] == url_supplier)
-                     & (input_df['color_info_buyma'] == color_info_buyma)]
-                
-                size_data = target_data[['size_supplier', 'size_buyma']]
                 try:
                     # 買い付け先の在庫を取得
-                    stock_data, mistake_asos_size_list = self.get_stock_from_supplier(url_supplier, size_data)
-                    if mistake_asos_size_list:
-                        # Asosのサイズ設定ミスをinput.csvに出力
-                        input_df.loc[
-                            (input_df['id_buyma'] == id_buyma)
-                            & (input_df['url_supplier'] == url_supplier)
-                            & (input_df['color_info_buyma'] == color_info_buyma)
-                            & (input_df['size_supplier'].isin(mistake_asos_size_list))
-                            , 'error'
-                            ] = 'size_supplier mistake'
-                        
-                        is_save_skip = True
+                    stock_data, is_mistake_asos = self.get_stock_from_supplier(id_buyma, url_supplier, color_info_buyma, input_df)
 
                     # buymaへ在庫反映を行う
-                    mistake_buyma_size_list = self.change_stock_to_seller(id_buyma, color_info_buyma, stock_data)
-                    if mistake_buyma_size_list:
-                        input_df.loc[
-                            (input_df['id_buyma'] == id_buyma)
-                            & (input_df['url_supplier'] == url_supplier)
-                            & (input_df['color_info_buyma'] == color_info_buyma)
-                            & (input_df['size_buyma'].isin(mistake_buyma_size_list))
-                            , 'error'
-                            ] = 'size_buyma mistake'
-                        
+                    is_mistake_buyma = self.change_stock_to_seller(id_buyma, color_info_buyma, stock_data, input_df)
+
+                    if is_mistake_asos or is_mistake_buyma:
                         is_save_skip = True
 
                 except AppRuntimeException as e:
@@ -150,10 +162,9 @@ class InventoryManager():
                         & (input_df['color_info_buyma'] == color_info_buyma)
                         , 'error'
                         ] = e.message
-                    continue
+                    is_save_skip = True
 
                 # 正常に処理したキーをセーブキーに追加する。（設定ミスがある場合は追加しない。）
-                # TODO 都度新しいオブジェクトを作っているため、負荷がかかりそう。
                 if not is_save_skip:
                     save_keys = save_keys.append({'id_buyma': id_buyma, 'url_supplier': url_supplier, 'color_info_buyma': color_info_buyma}, ignore_index=True)
                 

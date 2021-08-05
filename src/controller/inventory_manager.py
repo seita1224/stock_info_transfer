@@ -154,8 +154,6 @@ class InventoryManager():
                         is_save_skip = True
 
                 except AppRuntimeException as e:
-                    # TODO 
-                    # 最後にコンソールにinputdataをみるよう出力する。
                     input_df.loc[
                         (input_df['id_buyma'] == id_buyma)
                         & (input_df['url_supplier'] == url_supplier)
@@ -173,6 +171,8 @@ class InventoryManager():
                 save_keys = pd.DataFrame(index=[], columns=['id_buyma', 'url_supplier', 'color_info_buyma'])
         
         finally:
+            if not input_df[~(input_df['error'] == '')].empty:
+                print('\n設定ミスがあります。\ninput.csvを確認してください。')
             # 次回途中から処理開始できるよう、セーブキーを保存する
             csv.save_csv(settings.save_csv_path, save_keys)
             csv.save_csv(settings.input_csv_path, input_df)

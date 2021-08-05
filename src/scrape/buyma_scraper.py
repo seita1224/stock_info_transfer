@@ -207,6 +207,7 @@ class BuymaScraper(BaseScraper):
             # 次ページに行けなかった = 設定したbuyma_idが在庫管理に存在しない
             raise BuymaIdNotFoundException('buyma_id mistake')
         
+        ehit_item_button.click()
         # 商品が出品中なのかを取得する。
         is_sales = self.is_now_sales(buyma_id)
 

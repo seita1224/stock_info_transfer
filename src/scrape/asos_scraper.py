@@ -27,7 +27,7 @@ class AsosScraper(BaseScraper):
         """
 
         try:
-            out_stock = self.get_element_by_xpath_short_wait('//*[@class="product-out-of-stock-label"]')
+            out_stock = self.get_element_by_xpath_short_wait('//*[@class="product-out-of-stock-label"][text()="Out of stock"]')
         except ElementNotFoundException:
             # Elementが見つからない　= 在庫切れではない
             return False

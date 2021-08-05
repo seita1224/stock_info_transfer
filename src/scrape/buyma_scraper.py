@@ -3,6 +3,7 @@ from typing import Dict, List
 
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.select import Select
 from soupsieve import select
 from exception.exceptions import AppRuntimeException
@@ -52,21 +53,22 @@ class BuymaScraper(BaseScraper):
         except ElementNotFoundException:
             return False 
 
-    def go_item_edhit_page(self, buyma_id: str) -> bool:
+    def go_item_edhit_page(self, buyma_id: str) -> WebElement:
         """ 在庫編集画面に移動する
 
         Args:
             buyma_id (str): 編集するbuymaの商品id
 
         Returns:
-            bool: 現在のページに一致するbuymaの商品idが無い場合、False
+            編集ボタン: 一致するbuymaの商品idが無い場合、None
         """
-        try:
-            edhit_button = self.get_element_by_xpath_short_wait(f'//*[@class="js_item_colorsize_edit"]/*[@data-syo-id="{buyma_id}"]')
-            edhit_button.click()
-            return True
-        except ElementNotFoundException:
-            return False
+        while True:
+            try:
+                edhit_button = self.get_element_by_xpath_short_wait(f'//*[@class="js_item_colorsize_edit"]/*[@data-syo-id="{buyma_id}"]')
+                return edhit_button
+            except ElementNotFoundException:
+                if not self.__go_next_page():
+                    return None
     
     def change_max_seles_count(self, max_seles_count: str) -> True:
         """ 買付可能数の変更
@@ -80,17 +82,22 @@ class BuymaScraper(BaseScraper):
         max_seles_element = self.get_element_by_xpath_short_wait('//*[@class="js-colorsize-capacity-amount sell-unit-summary-input"]')
 
         # 対象の商品が全て在庫なしの場合、非活性のため入力しない
-        # TODO 出品停止処理にすべきものがFalseとなる。フラグを立てるなどして出品停止処理へ
         if max_seles_element.is_enabled():
             max_seles_element.clear()
             max_seles_element.send_keys(max_seles_count)
-            
-            # 暫定処理
+
             return True
 
         else:
-            # 暫定処理
-            return False
+            # 手元に在庫があるかをチェックし、なければ在庫なし=Trueを返す。
+            is_stock = self.get_element_by_xpath_short_wait('//*[@class="js-colorsize-unit-summary"]')
+            
+            if is_stock == 0:
+                return False
+            else:
+                # 買い付け先に在庫無しでも、手元に在庫ありの場合は、
+                # 出品停止にしない（在庫あり）ため、Trueを返す。
+                return True
 
 
     def change_stock(self, color: str, stock_data: Dict[str, bool]) -> List[str]:
@@ -149,10 +156,35 @@ class BuymaScraper(BaseScraper):
         save_button = self.get_element_by_xpath('//*[@class="js-commit-changes fab-button fab-button--primary fab-button--m"]')
         save_button.click()
 
-        # TODO すべて在庫無しで更新ボタンを押すとエラーになるため、
-        # それを判断し、後続の出品停止処理につなげる。
+    def is_now_sales(self, item_id: str):
+        
+        status = self.get_element_by_xpath_short_wait(f'//*[@id="_item_edit_status_{item_id}"]')
+        str_status = status.get_attribute('data-item-edit-status')
+        if str_status == 'Sts01':
+            #出品中
+            return True
+        if str_status == 'Sts04':
+            return False
 
+    def change_status(self, item_id: str, code: int):
+        """ 出品停止・再開を行う
 
+        Args:
+            item_id (str): 対象のbuyma_id
+            code (int): 1(出品再開を実施)/2(出品停止を実施)
+        """
+        change_status_page = self.get_element_by_xpath_short_wait(f'//*[@data-vt="/vt/my/buyeritems/item_name/{item_id}"]')
+        change_status_page.click()
+
+        if code == 1:
+            status_switch = self.get_element_by_xpath_short_wait('//*[@class="bmm-c-switch sell-status-switch"]')
+        elif code == 2:
+            status_switch = self.get_element_by_xpath_short_wait('//*[@class="bmm-c-switch is-checked sell-status-switch"]')
+        
+        status_switch.click()
+        
+        change_status = self.get_element_by_xpath_short_wait('//*/button')
+        change_status.click()
 
     def run(self, buyma_id: str, color: str, stock_data: Dict[str, bool]) -> List[str]:
         """ 実行処理
@@ -170,18 +202,29 @@ class BuymaScraper(BaseScraper):
         """
         self.go_item_manege_page()
         
-        while not self.go_item_edhit_page(buyma_id):
-
-            if not self.__go_next_page():
-                # 次ページに行けなかった = 設定したbuyma_idが在庫管理に存在しない
-                raise BuymaIdNotFoundException('buyma_id mistake')
+        ehit_item_button = self.go_item_edhit_page(buyma_id)
+        if ehit_item_button is None:
+            # 次ページに行けなかった = 設定したbuyma_idが在庫管理に存在しない
+            raise BuymaIdNotFoundException('buyma_id mistake')
+        
+        # 商品が出品中なのかを取得する。
+        is_sales = self.is_now_sales(buyma_id)
 
         mistake_size_list = self.change_stock(color, stock_data)
         is_stock = self.change_max_seles_count(settings.buyma_max_sales_count)
         if is_stock:
             self.save_change_stock()
+            if is_sales == False:
+                #在庫あるが、出品停止中の場合、出品再開処理をおこなう。
+                self.change_status(buyma_id, 1)
+                print(f'buyma_id={buyma_id}を出品再開しました。')
         else:
-            # TODO 出品停止処理の実装　暫定処理
-            print(f'Buyma_id={buyma_id}を出品停止にしてください。')
+            if is_sales:
+                #在庫無しだが、出品中の場合、出品停止処理をおこなう。
+                self.change_status(buyma_id, 2)
+                print(f'buyma_id={buyma_id}を出品停止しました。')
+        
+        if is_sales is None:
+            print(f'buyma_id={buyma_id}のステータスが「出品中/出品停止中」以外になっています。')
 
         return mistake_size_list

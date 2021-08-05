@@ -1,7 +1,6 @@
-import re
+import time
 from typing import Dict, List
 
-from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.select import Select
@@ -70,7 +69,7 @@ class BuymaScraper(BaseScraper):
                 if not self.__go_next_page():
                     return None
     
-    def change_max_seles_count(self, max_seles_count: str) -> True:
+    def change_max_seles_count(self, max_seles_count: str) -> bool:
         """ 買付可能数の変更
 
         Args:
@@ -92,7 +91,7 @@ class BuymaScraper(BaseScraper):
             # 手元に在庫があるかをチェックし、なければ在庫なし=Trueを返す。
             is_stock = self.get_element_by_xpath_short_wait('//*[@class="js-colorsize-unit-summary"]')
             
-            if is_stock == 0:
+            if is_stock.text == '0':
                 return False
             else:
                 # 買い付け先に在庫無しでも、手元に在庫ありの場合は、
@@ -155,6 +154,12 @@ class BuymaScraper(BaseScraper):
         """
         save_button = self.get_element_by_xpath('//*[@class="js-commit-changes fab-button fab-button--primary fab-button--m"]')
         save_button.click()
+        time.sleep(1)
+        try:
+            cansel_button = self.get_element_by_xpath_short_wait('//*[@class="js-close-popup fab-button fab-button--back fab-button--m"]')
+            cansel_button.click()
+        except ElementNotFoundException:
+            pass
 
     def is_now_sales(self, item_id: str):
         
@@ -173,17 +178,22 @@ class BuymaScraper(BaseScraper):
             item_id (str): 対象のbuyma_id
             code (int): 1(出品再開を実施)/2(出品停止を実施)
         """
-        change_status_page = self.get_element_by_xpath_short_wait(f'//*[@data-vt="/vt/my/buyeritems/item_name/{item_id}"]')
+        time.sleep(1)
+        change_status_page = self.get_element_by_xpath(f'//*[@data-vt="/vt/my/buyeritems/item_name/{item_id}"]')
         change_status_page.click()
-
+        time.sleep(1)
         if code == 1:
-            status_switch = self.get_element_by_xpath_short_wait('//*[@class="bmm-c-switch sell-status-switch"]')
+            ActionChains(self.driver)\
+                .move_to_element(self.get_element_by_xpath('//*[@class="bmm-c-switch sell-status-switch"]'))\
+                    .click(self.get_element_by_xpath('//*[@class="bmm-c-switch sell-status-switch"]'))\
+                        .perform()
         elif code == 2:
-            status_switch = self.get_element_by_xpath_short_wait('//*[@class="bmm-c-switch is-checked sell-status-switch"]')
-        
-        status_switch.click()
-        
-        change_status = self.get_element_by_xpath_short_wait('//*/button')
+            ActionChains(self.driver)\
+                .move_to_element(self.get_element_by_xpath('//*[@class="bmm-c-switch is-checked sell-status-switch"]'))\
+                    .click(self.get_element_by_xpath('//*[@class="bmm-c-switch is-checked sell-status-switch"]'))\
+                        .perform()
+        change_status = self.get_element_by_xpath('//*/button')
+        time.sleep(1)
         change_status.click()
 
     def run(self, buyma_id: str, color: str, stock_data: Dict[str, bool]) -> List[str]:
@@ -213,8 +223,8 @@ class BuymaScraper(BaseScraper):
 
         mistake_size_list = self.change_stock(color, stock_data)
         is_stock = self.change_max_seles_count(settings.buyma_max_sales_count)
+        self.save_change_stock()
         if is_stock:
-            self.save_change_stock()
             if is_sales == False:
                 #在庫あるが、出品停止中の場合、出品再開処理をおこなう。
                 self.change_status(buyma_id, 1)

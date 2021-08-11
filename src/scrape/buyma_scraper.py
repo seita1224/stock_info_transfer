@@ -2,7 +2,7 @@ import time
 from typing import Dict, List
 
 from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver.remote.webelement import WebElement, isDisplayed_js
 from selenium.webdriver.support.select import Select
 from soupsieve import select
 from exception.exceptions import AppRuntimeException
@@ -18,13 +18,19 @@ class BuymaColorNotFundException(AppRuntimeException):
 
 class BuymaScraper(BaseScraper):
 
+    is_first_access = False
+
     @scrape_retry
     def go_item_manege_page(self) -> None:
         """ 在庫管理ページに移動
         """
         self.driver.get('https://www.buyma.com/my/sell/?page=1&tab=b#/')
-        self.get_element_by_xpath('//*[@id="row-count-options"]').click()
-        self.get_element_by_xpath('//*[@id="row-count-options"]/option[3]').click()
+        
+        if not self.is_first_access:
+            self.get_element_by_xpath('//*[@id="row-count-options"]').click()
+            self.get_element_by_xpath('//*[@id="row-count-options"]/option[3]').click()
+
+            self.is_first_access = True
 
     @scrape_retry
     def login(self) -> None:
@@ -157,6 +163,7 @@ class BuymaScraper(BaseScraper):
         time.sleep(1)
         try:
             cansel_button = self.get_element_by_xpath_short_wait('//*[@class="js-close-popup fab-button fab-button--back fab-button--m"]')
+            time.sleep(2)
             cansel_button.click()
         except ElementNotFoundException:
             pass

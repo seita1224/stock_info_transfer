@@ -1,5 +1,7 @@
+from datetime import date
 import time
 from typing import Dict, List
+import re
 
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.remote.webelement import WebElement
@@ -163,8 +165,8 @@ class BuymaScraper(BaseScraper):
         time.sleep(1)
         try:
             cansel_button = self.get_element_by_xpath_short_wait('//*[@class="js-close-popup fab-button fab-button--back fab-button--m"]')
-            time.sleep(2)
             cansel_button.click()
+            time.sleep(2)
         except ElementNotFoundException:
             pass
 
@@ -183,24 +185,25 @@ class BuymaScraper(BaseScraper):
 
         Args:
             item_id (str): 対象のbuyma_id
-            code (int): 1(出品再開を実施)/2(出品停止を実施)
+            code (int): 1(出品再開)/2(出品停止)
         """
-        time.sleep(1)
         change_status_page = self.get_element_by_xpath(f'//*[@data-vt="/vt/my/buyeritems/item_name/{item_id}"]')
         change_status_page.click()
-        time.sleep(1)
+        time.sleep(2)
+
         if code == 1:
-            ActionChains(self.driver)\
-                .move_to_element(self.get_element_by_xpath('//*[@class="bmm-c-switch sell-status-switch"]'))\
-                    .click(self.get_element_by_xpath('//*[@class="bmm-c-switch sell-status-switch"]'))\
-                        .perform()
+            # 出品再開
+            switch_button = self.get_element_by_xpath('//*[@class="bmm-c-switch sell-status-switch"]')
         elif code == 2:
-            ActionChains(self.driver)\
-                .move_to_element(self.get_element_by_xpath('//*[@class="bmm-c-switch is-checked sell-status-switch"]'))\
-                    .click(self.get_element_by_xpath('//*[@class="bmm-c-switch is-checked sell-status-switch"]'))\
-                        .perform()
-        change_status = self.get_element_by_xpath('//*/button')
+            # 出品停止
+            switch_button = self.get_element_by_xpath('//*[@class="bmm-c-switch is-checked sell-status-switch"]')
+        
+        # 要素がラベルのため、click()メソッドが使用できないため、
+        # スクリプトを実行させクリック処理を実施。
+        self.driver.execute_script("arguments[0].click();", switch_button)
+
         time.sleep(1)
+        change_status = self.get_element_by_xpath('//*/button')
         change_status.click()
         
         while True:
@@ -215,17 +218,25 @@ class BuymaScraper(BaseScraper):
         Args:
             buyma_id (str): 対象のbuyma商品ID
         """
-        extend_days = calc_date.plus_weeks_from_today(int(settings.extension_sales_week), '%Y/%m/%d')
+        extend_days = calc_date.plus_weeks_from_today(int(settings.extension_sales_week))
         edit_button = self.get_element_by_xpath_short_wait(f'//*[@data-vt="/vt/my/buyeritems/edit/date/{buyma_id}"]')
         edit_button.click()
         time.sleep(1)
-        input_text = self.get_element_by_xpath_short_wait(f'//*[@data-vt="/vt/my/buyeritems/edit/date/{buyma_id}"]/parent::node()/parent::node()/input')
-        input_text.click()
-        input_text.text = extend_days
-        time.sleep(1)
-        self.get_element_by_xpath_short_wait('//*[@class="ItemName"]').click()
-
-        time.sleep(2)
+        while True:
+            calendar_year = self.get_element_by_xpath_short_wait('//*[@class="ui-datepicker-year"]')
+            calendar_month = self.get_element_by_xpath_short_wait('//*[@class="ui-datepicker-month"]')
+            
+            calendar_date = date(
+                int(re.sub(r'\D', '', calendar_year.text)),
+                int(re.sub(r'\D', '', calendar_month.text)),
+                1
+            )
+            if calendar_date < extend_days.replace(day=1):
+                self.get_element_by_xpath_short_wait('//*[@class="ui-datepicker-next ui-corner-all"]').click()
+            else:
+                self.get_element_by_xpath_short_wait(f'//*[@class="ui-datepicker-calendar"]/tbody/tr/td/a[text()="{extend_days.day}"]').click()
+                time.sleep(2)
+                break
 
     def run(self, buyma_id: str, color: str, stock_data: Dict[str, bool]) -> List[str]:
         """ 実行処理

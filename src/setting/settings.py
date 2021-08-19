@@ -29,3 +29,4 @@ chromedriver_path = get_chromedriver_path()
 window_display = parse_str_to_bool(conf['chrome']['window_display'])
 
 buyma_max_sales_count = conf['buyma']['max_sales_count']
+extension_sales_week = conf['buyma']['extension_sales_week']

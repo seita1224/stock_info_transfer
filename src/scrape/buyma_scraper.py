@@ -2,13 +2,13 @@ import time
 from typing import Dict, List
 
 from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.remote.webelement import WebElement, isDisplayed_js
+from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support.select import Select
-from soupsieve import select
 from exception.exceptions import AppRuntimeException
 from scrape.base_scraper import BaseScraper, ElementNotFoundException, scrape_retry
 
 from setting import settings
+from utils import calc_date
 
 class BuymaIdNotFoundException(AppRuntimeException):
     pass
@@ -202,6 +202,24 @@ class BuymaScraper(BaseScraper):
         change_status = self.get_element_by_xpath('//*/button')
         time.sleep(1)
         change_status.click()
+    
+    def extend_sales_period(self, buyma_id: str):
+        """ 販売期間の延長する
+        
+        Args:
+            buyma_id (str): 対象のbuyma商品ID
+        """
+        extend_days = calc_date.plus_weeks_from_today(int(settings.extension_sales_week), '%Y/%m/%d')
+        edit_button = self.get_element_by_xpath_short_wait(f'//*[@data-vt="/vt/my/buyeritems/edit/date/{buyma_id}"]')
+        edit_button.click()
+        time.sleep(1)
+        input_text = self.get_element_by_xpath_short_wait(f'//*[@data-vt="/vt/my/buyeritems/edit/date/{buyma_id}"]/parent::node()/parent::node()/input')
+        input_text.click()
+        input_text.text = extend_days
+        time.sleep(1)
+        self.get_element_by_xpath_short_wait('//*[@class="ItemName"]').click()
+
+        time.sleep(2)
 
     def run(self, buyma_id: str, color: str, stock_data: Dict[str, bool]) -> List[str]:
         """ 実行処理
@@ -230,7 +248,9 @@ class BuymaScraper(BaseScraper):
 
         mistake_size_list = self.change_stock(color, stock_data)
         is_stock = self.change_max_seles_count(settings.buyma_max_sales_count)
-        self.save_change_stock()
+        # 販売期間の延長
+        self.save_change_stock(buyma_id)
+        self.extend_sales_period()
         if is_stock:
             if is_sales == False:
                 #在庫あるが、出品停止中の場合、出品再開処理をおこなう。

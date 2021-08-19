@@ -255,8 +255,8 @@ class BuymaScraper(BaseScraper):
         mistake_size_list = self.change_stock(color, stock_data)
         is_stock = self.change_max_seles_count(settings.buyma_max_sales_count)
         # 販売期間の延長
-        self.save_change_stock(buyma_id)
-        self.extend_sales_period()
+        self.save_change_stock()
+        self.extend_sales_period(buyma_id)
         if is_stock:
             if is_sales == False:
                 #在庫あるが、出品停止中の場合、出品再開処理をおこなう。

@@ -202,6 +202,12 @@ class BuymaScraper(BaseScraper):
         change_status = self.get_element_by_xpath('//*/button')
         time.sleep(1)
         change_status.click()
+        
+        while True:
+            time.sleep(2)
+            cur_url = self.driver.current_url
+            if cur_url == 'https://www.buyma.com/my/sell/completed':
+                break
     
     def extend_sales_period(self, buyma_id: str):
         """ 販売期間の延長する

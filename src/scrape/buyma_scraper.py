@@ -162,13 +162,16 @@ class BuymaScraper(BaseScraper):
         """
         save_button = self.get_element_by_xpath('//*[@class="js-commit-changes fab-button fab-button--primary fab-button--m"]')
         save_button.click()
-        time.sleep(1)
-        try:
-            cansel_button = self.get_element_by_xpath_short_wait('//*[@class="js-close-popup fab-button fab-button--back fab-button--m"]')
-            cansel_button.click()
-            time.sleep(2)
-        except ElementNotFoundException:
-            pass
+        time.sleep(2)
+
+        error_message = self.get_element_by_xpath('//*[@class="error js-error-messasge-area"]')
+        if not error_message.text == '':
+            try:
+                cansel_button = self.get_element_by_xpath_short_wait('//*[@class="js-close-popup fab-button fab-button--back fab-button--m"]')
+                cansel_button.click()
+                time.sleep(2)
+            except ElementNotFoundException:
+                pass
 
     def is_now_sales(self, item_id: str):
         

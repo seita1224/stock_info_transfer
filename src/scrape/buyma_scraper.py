@@ -171,7 +171,7 @@ class BuymaScraper(BaseScraper):
                 # エラーが取得できない場合は、正常に保存が行えているため、処理終了する。
                 return
 
-        if not error_message == '':
+        if not error_message.text == '':
             try:
                 cansel_button = self.get_element_by_xpath_short_wait('//*[@class="js-close-popup fab-button fab-button--back fab-button--m"]')
                 cansel_button.click()
@@ -229,7 +229,8 @@ class BuymaScraper(BaseScraper):
         """
         extend_days = calc_date.plus_weeks_from_today(int(settings.extension_sales_week))
         edit_button = self.get_element_by_xpath_short_wait(f'//*[@data-vt="/vt/my/buyeritems/edit/date/{buyma_id}"]')
-        edit_button.click()
+        # edit_button.click()
+        self.driver.execute_script("arguments[0].click();", edit_button)
         time.sleep(1)
         while True:
             calendar_year = self.get_element_by_xpath_short_wait('//*[@class="ui-datepicker-year"]')

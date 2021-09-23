@@ -12,6 +12,7 @@ def read_csv(file_path: str) -> pd.DataFrame:
     """
 
     df = pd.read_csv(file_path, encoding='utf-8')
+    df = df.fillna('')
 
     return df
 

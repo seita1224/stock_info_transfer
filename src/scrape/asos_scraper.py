@@ -47,6 +47,7 @@ class AsosScraper(BaseScraper):
             Tuple[Dict[str, bool], List[str]]: ({'Buymaのサイズ表記': '在庫の有無(True(有り)/False(無し))'}, 設定誤りのサイズリスト)
         """
         size_list = list(size.keys())
+        print(size_list)
         if len(size_list) == 1 and size_list[0] == '':
             # アクセサリー等のsizeが無いもの処理
             try:
@@ -54,7 +55,7 @@ class AsosScraper(BaseScraper):
             except ElementNotFoundException:
                 raise IllegalURLException('url_supplier mistake')
             
-            return {size.values[0]: True}
+            return {list(size.values())[0]: True}, []
 
         try:
             elements = self.get_elements_by_xpath('//*[@id="main-size-select-0"]/option')

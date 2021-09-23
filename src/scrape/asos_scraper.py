@@ -47,7 +47,6 @@ class AsosScraper(BaseScraper):
             Tuple[Dict[str, bool], List[str]]: ({'Buymaのサイズ表記': '在庫の有無(True(有り)/False(無し))'}, 設定誤りのサイズリスト)
         """
         size_list = list(size.keys())
-        print(size_list)
         if len(size_list) == 1 and size_list[0] == '':
             # アクセサリー等のsizeが無いもの処理
             try:

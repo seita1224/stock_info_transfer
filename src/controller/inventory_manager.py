@@ -7,14 +7,13 @@ from exception.exceptions import AppRuntimeException
 from utils import csv
 from scrape.buyma_scraper import BuymaScraper
 from scrape.asos_scraper import AsosScraper
+from scrape.end_scraper import EndScraper
 from setting import settings
 
 
 class InventoryManager():
 
     def __init__(self) -> None:
-        self.asos = AsosScraper()
-        self.asos.go_top_page()
         self.buyma = BuymaScraper()
         self.buyma.login()
 
@@ -87,11 +86,17 @@ class InventoryManager():
         # {'仕入れ先のsize表記': 'buymaのsize表記'}のdictを作成する
         size_data = {row[0]: row[1] for _, row in size_data.iterrows()}
 
-        stock_data, mistake_list = self.asos.run(url_supplier, size_data)
+        if 'https://www.asos.com' in url_supplier:
+            supplier = AsosScraper()
+        elif 'https://www.endclothing.com/' in url_supplier:
+            supplier = EndScraper()
         
+        supplier.go_top_page()
+        stock_data, mistake_list = self.asos.run(url_supplier, size_data)
+
         mistake_flg = False
         if mistake_list:
-            # Asosのサイズ設定ミスをinputに出力
+            # supplierのサイズ設定ミスをinputに出力
             input_df.loc[
                 (input_df['id_buyma'] == id_buyma)
                 & (input_df['url_supplier'] == url_supplier)
@@ -145,12 +150,12 @@ class InventoryManager():
                 
                 try:
                     # 買い付け先の在庫を取得
-                    stock_data, is_mistake_asos = self.get_stock_from_supplier(id_buyma, url_supplier, color_info_buyma, input_df)
+                    stock_data, is_mistake_supplier = self.get_stock_from_supplier(id_buyma, url_supplier, color_info_buyma, input_df)
 
                     # buymaへ在庫反映を行う
                     is_mistake_buyma = self.change_stock_to_seller(id_buyma, color_info_buyma, stock_data, input_df)
 
-                    if is_mistake_asos or is_mistake_buyma:
+                    if is_mistake_supplier or is_mistake_buyma:
                         is_save_skip = True
 
                 except AppRuntimeException as e:

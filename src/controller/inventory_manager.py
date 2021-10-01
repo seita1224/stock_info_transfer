@@ -17,6 +17,11 @@ class InventoryManager():
         self.buyma = BuymaScraper()
         self.buyma.login()
 
+        self.asos = AsosScraper()
+        self.asos.go_top_page()
+        self.end = EndScraper()
+        self.end.go_top_page()
+
     @staticmethod
     def apply_save_keys(input_df: pd.DataFrame, save_keys: pd.DataFrame) -> pd.DataFrame:
         """ セーブキーを反映して今回処理対象のキーを作成する
@@ -87,9 +92,9 @@ class InventoryManager():
         size_data = {row[0]: row[1] for _, row in size_data.iterrows()}
 
         if 'https://www.asos.com' in url_supplier:
-            supplier = AsosScraper()
+            supplier = self.asos
         elif 'https://www.endclothing.com/' in url_supplier:
-            supplier = EndScraper()
+            supplier = self.end
         
         supplier.go_top_page()
         stock_data, mistake_list = supplier.run(url_supplier, size_data)

@@ -107,4 +107,4 @@ poetry.lock
 .vscode/launch.json
 .vscode/settings.json
 log/
-input_data/
+input/

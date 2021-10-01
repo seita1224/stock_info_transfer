@@ -1,5 +1,7 @@
 @echo off
-python stock_info_transfer.py
+cd /d %~dp0
+cd src
+python inventory.py
 
 echo;
 

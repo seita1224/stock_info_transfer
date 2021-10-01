@@ -92,7 +92,7 @@ class InventoryManager():
             supplier = EndScraper()
         
         supplier.go_top_page()
-        stock_data, mistake_list = self.asos.run(url_supplier, size_data)
+        stock_data, mistake_list = supplier.run(url_supplier, size_data)
 
         mistake_flg = False
         if mistake_list:

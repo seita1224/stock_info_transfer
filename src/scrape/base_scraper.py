@@ -1,4 +1,5 @@
 from typing import List
+import os
 
 from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver.support.ui import WebDriverWait
@@ -52,7 +53,7 @@ class BaseScraper:
         options.add_argument('--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.77 Safari/537.36')
         options.add_argument('--lang=ja')
         options.add_argument('--blink-settings=imagesEnabled=false')
-        self.driver = Chrome(executable_path=settings.chromedriver_path, options=options)
+        self.driver = Chrome(executable_path=settings.chromedriver_path, options=options, service_log_path=os.devnull)
         self.driver.implicitly_wait(5)
 
         self.web_wait = WebDriverWait(self.driver, 10)

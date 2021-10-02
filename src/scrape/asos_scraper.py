@@ -17,7 +17,7 @@ class rdict(dict):
         r = [ v for k,v in self.items() if p.search(k) ]
         return r if len(r) > 0 else KeyError
     def get(self, k, d=None):
-        p = re.compile(k)
+        p = re.compile('^' + k)
         r = [v for k, v in self.items() if p.search(k)]
         if len(r)==1: return r[0]
         return d

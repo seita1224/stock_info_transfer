@@ -1,5 +1,4 @@
 from typing import Dict, List, Tuple
-import re
 
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -10,17 +9,6 @@ from scrape.base_scraper import BaseScraper, ElementNotFoundException, scrape_re
 
 class IllegalURLException(AppRuntimeException):
     pass
-
-class rdict(dict):
-    def __getitem__(self, key):
-        p = re.compile(key)
-        r = [ v for k,v in self.items() if p.search(k) ]
-        return r if len(r) > 0 else KeyError
-    def get(self, k, d=None):
-        p = re.compile('^' + k)
-        r = [v for k, v in self.items() if p.search(k)]
-        if len(r)==1: return r[0]
-        return d
 
 
 class AsosScraper(BaseScraper):
@@ -73,14 +61,13 @@ class AsosScraper(BaseScraper):
             raise IllegalURLException('url_supplier mistake')
         
         # {'Asosのsize表記': '取得した在庫有無（True）'}
-        asos_stock = {element.text.strip(' - Not available'): bool(element.is_enabled()) for element in elements}
+        asos_stock = {element.text.split(' - ')[0]: bool(element.is_enabled()) for element in elements}
 
         stock = dict()
-        r_asos_stock = rdict(asos_stock)
 
         mistake_size_list = list()
         for asos_size, buyma_size in size.items():
-            is_stock = r_asos_stock.get(asos_size + '.*', None)
+            is_stock = asos_stock.get(asos_size.split(' - ')[0], None)
             
             if is_stock is None:
                 # Asosから取得した在庫情報に設定したサイズが無い = 設定誤りとして検知

@@ -187,14 +187,14 @@ class InventoryManager():
                 # 正常に処理したキーをセーブキーに追加する。（設定ミスがある場合は追加しない。）
                 if not is_save_skip:
                     save_keys = save_keys.append({'id_buyma': id_buyma}, ignore_index=True)
-                
-            if keys[~keys.isin(save_keys.to_dict(orient='list')).all(1)].empty:
-                # 全て処理のキーを処理した場合はセーブデータを削除する。
-                csv.delete_csv(settings.save_csv_path)
         
         finally:
             if not input_df[~(input_df['error'] == '')].empty:
                 print('\n設定ミスがあります。\ninput.csvを確認してください。')
-            # 次回途中から処理開始できるよう、セーブキーを保存する
-            csv.save_csv(settings.save_csv_path, save_keys)
+            if keys[~keys.isin(save_keys.to_dict(orient='list')).all(1)].empty:
+                # 全て処理のキーを処理した場合はセーブデータを削除する。
+                csv.delete_csv(settings.save_csv_path)
+            else:
+                # 次回途中から処理開始できるよう、セーブキーを保存する
+                csv.save_csv(settings.save_csv_path, save_keys)
             csv.save_csv(settings.input_csv_path, input_df)

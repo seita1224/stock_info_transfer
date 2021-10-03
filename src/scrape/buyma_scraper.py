@@ -155,7 +155,9 @@ class BuymaScraper(BaseScraper):
                 else:
                     # 在庫なし
                     select.select_by_value("0")
-            mistake_size_dict[color] = mistake_size_list
+            
+            if mistake_size_list:
+                mistake_size_dict[color] = mistake_size_list
         return mistake_size_dict
     
     def save_change_stock(self):

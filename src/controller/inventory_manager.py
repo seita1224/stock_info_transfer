@@ -1,3 +1,4 @@
+from collections import defaultdict
 import re
 from typing import Dict, List, Tuple
 
@@ -35,7 +36,7 @@ class InventoryManager():
         """
         
         # 在庫反映の単位となるキー項目を取得
-        keys = input_df[['id_buyma', 'url_supplier', 'color_info_buyma']]
+        keys = input_df[['id_buyma']]
         # 重複を削除する。
         keys = keys[~keys.duplicated()]
         # セーブデータがある場合は、途中から処理を行うため、キー項目から削除
@@ -65,11 +66,11 @@ class InventoryManager():
             save_df = csv.read_csv(settings.save_csv_path)
         except FileNotFoundError:
             # ファイルが存在しない場合はセーブデータ無しと判断する
-            save_df = pd.DataFrame(index=[], columns=['id_buyma', 'url_supplier', 'color_info_buyma'])
+            save_df = pd.DataFrame(index=[], columns=['id_buyma'])
         
         return input_df, save_df
 
-    def get_stock_from_supplier(self, id_buyma: str, url_supplier:str, color_info_buyma:str, input_df: pd.DataFrame) -> Tuple[Dict[str, bool], bool]:
+    def get_stock_from_supplier(self, id_buyma: str, input_df: pd.DataFrame) -> Tuple[defaultdict[str, defaultdict[str, bool]], bool]:
         """ 買い付け先から在庫取得する
 
         Args:
@@ -77,44 +78,56 @@ class InventoryManager():
             size_data (pd.DataFrame): サイズデータ（'size_supplier', 'size_buyma'列）
 
         Returns:
-            Tuple[Dict[str, bool], List[str]]: 
-                ({'Buymaのサイズ表記': '在庫の有無(True(有り)/False(無し))'}, 設定誤りのサイズリスト)
+            Tuple[defaultdict[str, defaultdict[str, bool]], bool]: 
+                ({'color表記' : {'Buymaのサイズ表記': '在庫の有無(True(有り)/False(無し))'}, 設定誤りのサイズリスト)
         """
-                        # キーが一致するデータ（複数）を取得する
-        target_data = input_df[
-            (input_df['id_buyma'] == id_buyma)
-            & (input_df['url_supplier'] == url_supplier)
-            & (input_df['color_info_buyma'] == color_info_buyma)]
-                
-        size_data = target_data[['size_supplier', 'size_buyma']]
-
-        # {'仕入れ先のsize表記': 'buymaのsize表記'}のdictを作成する
-        size_data = {row[0]: row[1] for _, row in size_data.iterrows()}
-
-        if 'https://www.asos.com' in url_supplier:
-            supplier = self.asos
-        elif 'https://www.endclothing.com/' in url_supplier:
-            supplier = self.end
-        
-        supplier.go_top_page()
-        stock_data, mistake_list = supplier.run(url_supplier, size_data)
-
+        all_stock_data = defaultdict(lambda: defaultdict(bool))
         mistake_flg = False
-        if mistake_list:
-            # supplierのサイズ設定ミスをinputに出力
-            input_df.loc[
+        
+        # キーが一致するデータ（複数）を取得する
+        target_id_df = input_df[(input_df['id_buyma'] == id_buyma)]
+        duplicate_df = target_id_df[~target_id_df[['url_supplier']].duplicated()]
+        keys = duplicate_df[['url_supplier', 'color_info_buyma']]
+        for _, row in keys.iterrows():
+            url_supplier, color_info_buyma = row[0], row[1]
+        
+
+            target_data = input_df[
                 (input_df['id_buyma'] == id_buyma)
                 & (input_df['url_supplier'] == url_supplier)
-                & (input_df['color_info_buyma'] == color_info_buyma)
-                & (input_df['size_supplier'].isin(mistake_list))
-                , 'error'
-                ] = 'size_supplier mistake'
-            mistake_flg = True
+                & (input_df['color_info_buyma'] == color_info_buyma)]
+                    
+            size_data = target_data[['size_supplier', 'size_buyma']]
 
-        return stock_data, mistake_flg
+            # {'仕入れ先のsize表記': 'buymaのsize表記'}のdictを作成する
+            size_data = {row[0]: row[1] for _, row in size_data.iterrows()}
+
+            if 'https://www.asos.com' in url_supplier:
+                supplier = self.asos
+            elif 'https://www.endclothing.com/' in url_supplier:
+                supplier = self.end
+
+            stock_data, mistake_list = supplier.run(url_supplier, size_data)
+            
+            for size, is_stock in stock_data.items():
+                all_stock_data[color_info_buyma][size] = all_stock_data[color_info_buyma][size] or is_stock
+
+        
+            if mistake_list:
+                # supplierのサイズ設定ミスをinputに出力
+                input_df.loc[
+                    (input_df['id_buyma'] == id_buyma)
+                    & (input_df['url_supplier'] == url_supplier)
+                    & (input_df['color_info_buyma'] == color_info_buyma)
+                    & (input_df['size_supplier'].isin(mistake_list))
+                    , 'error'
+                    ] = 'size_supplier mistake'
+                mistake_flg = True
+
+        return all_stock_data, mistake_flg
 
     
-    def change_stock_to_seller(self, buyma_id: str, color: str, stock_data: Dict[str, bool], input_df: pd.DataFrame) -> bool:
+    def change_stock_to_seller(self, buyma_id: str, stock_data: defaultdict[str, defaultdict[str, bool]], input_df: pd.DataFrame) -> bool:
         """ 在庫を反映する
 
         Args:
@@ -125,16 +138,17 @@ class InventoryManager():
         if not stock_data:
             return
         
-        mistake_list = self.buyma.run(buyma_id, color, stock_data)
+        mistake_dict = self.buyma.run(buyma_id, stock_data)
 
         mistake_flg = False
-        if mistake_list:
-            input_df.loc[
-                (input_df['id_buyma'] == buyma_id)
-                & (input_df['color_info_buyma'] == color)
-                & (input_df['size_buyma'].isin(mistake_list))
-                , 'error'
-                ] = 'size_buyma mistake'
+        if mistake_dict:
+            for color, mistake_list in mistake_dict.items():
+                input_df.loc[
+                    (input_df['id_buyma'] == buyma_id)
+                    & (input_df['color_info_buyma'] == color)
+                    & (input_df['size_buyma'].isin(mistake_list))
+                    , 'error'
+                    ] = 'size_buyma mistake'
             
             mistake_flg = True
 
@@ -149,16 +163,16 @@ class InventoryManager():
         keys = self.apply_save_keys(input_df, save_keys)
         try:
             for _, row in keys.iterrows():
-                id_buyma, url_supplier, color_info_buyma = row[0], row[1], row[2]
+                id_buyma = row[0]
 
                 is_save_skip = False
                 
                 try:
                     # 買い付け先の在庫を取得
-                    stock_data, is_mistake_supplier = self.get_stock_from_supplier(id_buyma, url_supplier, color_info_buyma, input_df)
+                    stock_data, is_mistake_supplier = self.get_stock_from_supplier(id_buyma, input_df)
 
                     # buymaへ在庫反映を行う
-                    is_mistake_buyma = self.change_stock_to_seller(id_buyma, color_info_buyma, stock_data, input_df)
+                    is_mistake_buyma = self.change_stock_to_seller(id_buyma, stock_data, input_df)
 
                     if is_mistake_supplier or is_mistake_buyma:
                         is_save_skip = True
@@ -166,19 +180,17 @@ class InventoryManager():
                 except AppRuntimeException as e:
                     input_df.loc[
                         (input_df['id_buyma'] == id_buyma)
-                        & (input_df['url_supplier'] == url_supplier)
-                        & (input_df['color_info_buyma'] == color_info_buyma)
                         , 'error'
                         ] = e.message
                     is_save_skip = True
 
                 # 正常に処理したキーをセーブキーに追加する。（設定ミスがある場合は追加しない。）
                 if not is_save_skip:
-                    save_keys = save_keys.append({'id_buyma': id_buyma, 'url_supplier': url_supplier, 'color_info_buyma': color_info_buyma}, ignore_index=True)
+                    save_keys = save_keys.append({'id_buyma': id_buyma}, ignore_index=True)
                 
             if keys[~keys.isin(save_keys.to_dict(orient='list')).all(1)].empty:
-                # 全て処理のキーを処理した場合はセーブデータを空にする。
-                save_keys = pd.DataFrame(index=[], columns=['id_buyma', 'url_supplier', 'color_info_buyma'])
+                # 全て処理のキーを処理した場合はセーブデータを削除する。
+                csv.delete_csv(settings.save_csv_path)
         
         finally:
             if not input_df[~(input_df['error'] == '')].empty:

@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 
 
@@ -24,3 +26,11 @@ def save_csv(file_path: str, save_data: pd.DataFrame) -> None:
         save_data (pd.DataFrame): 保存データ
     """
     save_data.to_csv(file_path, encoding='utf-8', index=False)
+
+def delete_csv(file_path) -> None:
+    """ csvを削除する処理
+
+    Args:
+        file_path (str): 削除するファイルパス
+    """
+    os.remove(file_path)

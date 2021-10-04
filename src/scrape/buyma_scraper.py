@@ -107,7 +107,7 @@ class BuymaScraper(BaseScraper):
                 return True
 
 
-    def change_stock(self, color: str, stock_data: Dict[str, bool]) -> List[str]:
+    def change_stock(self, stock_data: Dict[str, Dict[str, bool]]) -> Dict[str, List[str]]:
         """ 在庫編集処理
 
         Args:
@@ -118,44 +118,47 @@ class BuymaScraper(BaseScraper):
         Raises:
             BuymaColorNotFundException: 引数のcolorが編集画面に無い場合に発生
         """
-        
-        # テーブルヘッダーの色情報を取得し、編集対象の列を特定する
-        color_headers = self.get_elements_by_xpath('//*[@class="csp-table-color"]')
-        for color_location, color_header in enumerate(color_headers, 1):
-            if color_header.text == color:
-                target_position_num = color_location
-                break
-        else:
-            raise BuymaColorNotFundException(f'color_info_buyma mistake')
-
-        # 在庫編集処理
-        mistake_size_list = []
-        for buyma_size, is_stock in stock_data.items():
-            select_xpath = f'//*[@class="fab-design-txtleft"][text()="{buyma_size}"]/following-sibling::node()\
-                [@class="fab-design-txtleft fab-form"][{target_position_num}][1]/*/select'
-
-            # 手元に在庫ありが選択されている場合は編集しない
-            try:
-                selected = self.get_element_by_xpath_short_wait(select_xpath + '/option[@selected]')
-            except ElementNotFoundException:
-                # サイズの設定ミスの場合、ここでエラーとなる
-                mistake_size_list.append(buyma_size)
-                continue
-            if selected.get_attribute('value') == "2":
-                continue
-
-            select_element = self.get_element_by_xpath(select_xpath)
-            select_element.click()
-            select = Select(select_element)
-
-            if is_stock:
-                # 買付可
-                select.select_by_value("1")
+        mistake_size_dict = dict()
+        for color in stock_data.keys():
+            # テーブルヘッダーの色情報を取得し、編集対象の列を特定する
+            color_headers = self.get_elements_by_xpath('//*[@class="csp-table-color"]')
+            for color_location, color_header in enumerate(color_headers, 1):
+                if color_header.text == color:
+                    target_position_num = color_location
+                    break
             else:
-                # 在庫なし
-                select.select_by_value("0")
+                raise BuymaColorNotFundException(f'color_info_buyma mistake')
 
-        return mistake_size_list
+            # 在庫編集処理
+            mistake_size_list = []
+            for buyma_size, is_stock in stock_data[color].items():
+                select_xpath = f'//*[@class="fab-design-txtleft"][text()="{buyma_size}"]/following-sibling::node()\
+                    [@class="fab-design-txtleft fab-form"][{target_position_num}][1]/*/select'
+
+                # 手元に在庫ありが選択されている場合は編集しない
+                try:
+                    selected = self.get_element_by_xpath_short_wait(select_xpath + '/option[@selected]')
+                except ElementNotFoundException:
+                    # サイズの設定ミスの場合、ここでエラーとなる
+                    mistake_size_list.append(buyma_size)
+                    continue
+                if selected.get_attribute('value') == "2":
+                    continue
+
+                select_element = self.get_element_by_xpath(select_xpath)
+                select_element.click()
+                select = Select(select_element)
+
+                if is_stock:
+                    # 買付可
+                    select.select_by_value("1")
+                else:
+                    # 在庫なし
+                    select.select_by_value("0")
+            
+            if mistake_size_list:
+                mistake_size_dict[color] = mistake_size_list
+        return mistake_size_dict
     
     def save_change_stock(self):
         """　編集画面の保存処理
@@ -248,7 +251,7 @@ class BuymaScraper(BaseScraper):
                 time.sleep(2)
                 break
 
-    def run(self, buyma_id: str, color: str, stock_data: Dict[str, bool]) -> List[str]:
+    def run(self, buyma_id: str, stock_data: Dict[str, Dict[str, bool]]) -> Dict[str, List[str]]:
         """ 実行処理
 
         Args:
@@ -273,7 +276,7 @@ class BuymaScraper(BaseScraper):
         # 商品が出品中なのかを取得する。
         is_sales = self.is_now_sales(buyma_id)
 
-        mistake_size_list = self.change_stock(color, stock_data)
+        mistake_size_dict = self.change_stock(stock_data)
         is_stock = self.change_max_seles_count(settings.buyma_max_sales_count)
         # 販売期間の延長
         self.save_change_stock()
@@ -292,4 +295,4 @@ class BuymaScraper(BaseScraper):
         if is_sales is None:
             print(f'buyma_id={buyma_id}のステータスが「出品中/出品停止中」以外になっています。')
 
-        return mistake_size_list
+        return mistake_size_dict

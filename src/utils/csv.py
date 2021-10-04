@@ -33,4 +33,7 @@ def delete_csv(file_path) -> None:
     Args:
         file_path (str): 削除するファイルパス
     """
-    os.remove(file_path)
+    try:
+        os.remove(file_path)
+    except FileNotFoundError:
+        pass

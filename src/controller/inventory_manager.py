@@ -1,6 +1,7 @@
 from collections import defaultdict
 import re
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
+import dill
 
 import pandas as pd
 
@@ -22,6 +23,23 @@ class InventoryManager():
         self.asos.go_top_page()
         self.end = EndScraper()
         self.end.go_top_page()
+
+        self.last_time_stock = self.load_last_time_stock(settings.last_stock_path)
+    
+    @staticmethod
+    def load_last_time_stock(path: str) -> Dict[str, Dict[str, Dict[str, bool]]]:
+        try:
+            with open(path, 'rb') as f:
+                last_time_stock = dill.load(f)
+        except EOFError:
+            last_time_stock = dict()
+
+        return last_time_stock
+
+    @staticmethod
+    def save_last_time_stock(path, last_time_stock: Dict[str, Dict[str, Dict[str, bool]]]) -> None:
+        with open(path, 'wb') as f:
+            dill.dump(last_time_stock, f)
 
     @staticmethod
     def apply_save_keys(input_df: pd.DataFrame, save_keys: pd.DataFrame) -> pd.DataFrame:
@@ -154,6 +172,29 @@ class InventoryManager():
 
         return mistake_flg
 
+    def save_stock_data(self, id_buyma: str, stock_data: Dict[str, bool]) -> None:
+        """ 在庫情報を保存する
+
+        Args:
+            id_buyma (str): [description]
+            stock_data (Dict[str, bool]): [description]
+        """
+        self.last_time_stock[id_buyma] = stock_data
+
+    def is_change_last_time(self, id_buyma: str, stock_data: Dict[str, bool]) -> bool:
+        """ 前回の在庫情報から変更がある場合にTrueを返す
+
+        Args:
+            id_buyma (str): [description]
+            stock_data (Dict[str, bool]): [description]
+
+        Returns:
+            bool: [description]
+        """
+        last_stock = self.last_time_stock.get(id_buyma, dict())
+        
+        return last_stock != stock_data
+
     def run(self):
         """ エントリポイント
         """
@@ -170,12 +211,17 @@ class InventoryManager():
                 try:
                     # 買い付け先の在庫を取得
                     stock_data, is_mistake_supplier = self.get_stock_from_supplier(id_buyma, input_df)
+                    if is_mistake_supplier:
+                        is_save_skip = True
 
                     # buymaへ在庫反映を行う
-                    is_mistake_buyma = self.change_stock_to_seller(id_buyma, stock_data, input_df)
+                    if (self.is_change_last_time(id_buyma, stock_data)):
+                        is_mistake_buyma = self.change_stock_to_seller(id_buyma, stock_data, input_df)
 
-                    if is_mistake_supplier or is_mistake_buyma:
-                        is_save_skip = True
+                        self.save_stock_data(id_buyma, stock_data)
+
+                        if is_mistake_buyma:
+                            is_save_skip = True
 
                 except AppRuntimeException as e:
                     input_df.loc[
@@ -198,3 +244,4 @@ class InventoryManager():
                 # 次回途中から処理開始できるよう、セーブキーを保存する
                 csv.save_csv(settings.save_csv_path, save_keys)
             csv.save_csv(settings.input_csv_path, input_df)
+            self.save_last_time_stock(settings.last_stock_path, self.last_time_stock)

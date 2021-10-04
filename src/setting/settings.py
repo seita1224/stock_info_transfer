@@ -24,6 +24,7 @@ conf.read('../settings.ini')
 
 input_csv_path = get_abspath(conf['input']['input_csv_path'])
 save_csv_path = get_abspath(conf['input']['save_csv_path'])
+last_stock_path = get_abspath(conf['input']['last_stock_path'])
 
 chromedriver_path = get_chromedriver_path()
 window_display = parse_str_to_bool(conf['chrome']['window_display'])

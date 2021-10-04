@@ -1,5 +1,4 @@
 from typing import Dict, List, Tuple
-from numpy import e
 
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -62,13 +61,13 @@ class AsosScraper(BaseScraper):
             raise IllegalURLException('url_supplier mistake')
         
         # {'Asosのsize表記': '取得した在庫有無（True）'}
-        asos_stock = {element.text.strip(' - Not available'): bool(element.is_enabled()) for element in elements}
+        asos_stock = {element.text.split(' - ')[0]: bool(element.is_enabled()) for element in elements}
 
         stock = dict()
 
         mistake_size_list = list()
         for asos_size, buyma_size in size.items():
-            is_stock = asos_stock.get(asos_size, None)
+            is_stock = asos_stock.get(asos_size.split(' - ')[0], None)
             
             if is_stock is None:
                 # Asosから取得した在庫情報に設定したサイズが無い = 設定誤りとして検知

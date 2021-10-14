@@ -31,7 +31,7 @@ class InventoryManager():
         try:
             with open(path, 'rb') as f:
                 last_time_stock = dill.load(f)
-        except EOFError:
+        except FileNotFoundError:
             last_time_stock = dict()
 
         return last_time_stock
@@ -88,7 +88,7 @@ class InventoryManager():
         
         return input_df, save_df
 
-    def get_stock_from_supplier(self, id_buyma: str, input_df: pd.DataFrame) -> Tuple[defaultdict[str, defaultdict[str, bool]], bool]:
+    def get_stock_from_supplier(self, id_buyma: str, input_df: pd.DataFrame) -> Tuple[Dict[str, Dict[str, bool]], bool]:
         """ 買い付け先から在庫取得する
 
         Args:
@@ -145,7 +145,7 @@ class InventoryManager():
         return all_stock_data, mistake_flg
 
     
-    def change_stock_to_seller(self, buyma_id: str, stock_data: defaultdict[str, defaultdict[str, bool]], input_df: pd.DataFrame) -> bool:
+    def change_stock_to_seller(self, buyma_id: str, stock_data: Dict[str, Dict[str, bool]], input_df: pd.DataFrame) -> bool:
         """ 在庫を反映する
 
         Args:

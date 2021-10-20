@@ -10,6 +10,7 @@ from utils import csv
 from scrape.buyma_scraper import BuymaScraper
 from scrape.asos_scraper import AsosScraper
 from scrape.end_scraper import EndScraper
+from scrape.dress_scraper import DressScraper
 from setting import settings
 
 
@@ -23,6 +24,9 @@ class InventoryManager():
         self.asos.go_top_page()
         self.end = EndScraper()
         self.end.go_top_page()
+
+        self.dress = DressScraper()
+        self.dress.go_top_page()
 
         self.last_time_stock = self.load_last_time_stock(settings.last_stock_path)
     
@@ -124,6 +128,8 @@ class InventoryManager():
                 supplier = self.asos
             elif 'https://www.endclothing.com/' in url_supplier:
                 supplier = self.end
+            elif 'https://www.dressinn.com/' in url_supplier:
+                supplier = self.dress
 
             stock_data, mistake_list = supplier.run(url_supplier, size_data)
             

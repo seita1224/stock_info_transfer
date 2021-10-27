@@ -27,15 +27,15 @@ class MrporterScraper(BaseScraper):
         """
 
         try:
-            out_stock = self.get_element_by_xpath_short_wait('//*[@aria-label="Add to Bag"]')
+            is_sales = self.get_element_by_xpath_short_wait('//*[@aria-label="Add to Bag"]')
         except ElementNotFoundException:
-            # Elementが見つからない　= 在庫切れではない
-            return False
+            # Elementが見つからない　= 在庫切れ
+            return True
         
-        if out_stock:
-           return True
+        if is_sales:
+           return False
         
-        return False
+        return True
 
     def get_stock_by_size(self, size: Dict) -> Tuple[Dict[str, bool], List[str]]:
         """ サイズごとの在庫の有無を取得する
@@ -104,4 +104,3 @@ class MrporterScraper(BaseScraper):
         stock,  mistake_size_list= self.get_stock_by_size(size)
 
         return stock, mistake_size_list
-

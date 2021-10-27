@@ -43,9 +43,17 @@ class BuymaScraper(BaseScraper):
             password (str): パスワード
         """
         self.driver.get('https://www.buyma.com/login/')
-        # seleniumでログインを行うとエラーとなることが
-        # 頻発するため、手動でのログインを促す。
-        input('buymaへログインした後にEnterを押してください。')
+        
+        if settings.is_auto_login:
+            # seleniumでログインを行うとエラーとなることがあった。
+            self.driver.execute_script('document.getElementById("txtLoginId").value="%s";' % settings.login_id)
+            self.driver.execute_script('document.getElementById("txtLoginPass").value="%s";' % settings.login_pass)
+            login_button = self.get_element_by_xpath_short_wait('//*[@id="login_do"]')
+            login_button.click()
+        else:
+            # seleniumでログイン処理を行うとエラーになることがあるため、手動ログインにも対応している。
+            input('buymaへログインした後にEnterを押してください。')
+
 
     def __go_next_page(self) -> bool:
         """ 次の在庫管理ページに移動する

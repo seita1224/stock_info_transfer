@@ -31,3 +31,6 @@ window_display = parse_str_to_bool(conf['chrome']['window_display'])
 
 buyma_max_sales_count = conf['buyma']['max_sales_count']
 extension_sales_week = conf['buyma']['extension_sales_week']
+is_auto_login = conf['buyma']['is_auto_login']
+login_id = conf['buyma']['login_id']
+login_pass = conf['buyma']['login_pass']

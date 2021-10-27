@@ -54,7 +54,6 @@ class BuymaScraper(BaseScraper):
             # seleniumでログイン処理を行うとエラーになることがあるため、手動ログインにも対応している。
             input('buymaへログインした後にEnterを押してください。')
 
-        time.sleep(100000)
 
     def __go_next_page(self) -> bool:
         """ 次の在庫管理ページに移動する

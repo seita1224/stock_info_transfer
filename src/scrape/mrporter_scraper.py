@@ -62,8 +62,6 @@ class MrporterScraper(BaseScraper):
             raise IllegalURLException('url_supplier mistake')
         
         # {'Mrporterのsize表記': '取得した在庫有無（True）'}
-        for element in elements:
-            print(type(element.get_attribute('aria-label')))
 
         mrporter_stock = {element.text: 'sold out' not in element.get_attribute('aria-label') for element in elements}
 

@@ -108,3 +108,4 @@ poetry.lock
 .vscode/settings.json
 log/
 input/
+settings.ini

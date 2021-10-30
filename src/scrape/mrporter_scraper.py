@@ -27,6 +27,7 @@ class MrporterScraper(BaseScraper):
         """
 
         try:
+            # TODO　この条件で判定すると、urlをまちがえている場合でも在庫無しと判断されてしまう。
             is_sales = self.get_element_by_xpath_short_wait('//*[@aria-label="Add to Bag"]')
         except ElementNotFoundException:
             # Elementが見つからない　= 在庫切れ

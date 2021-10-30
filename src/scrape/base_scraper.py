@@ -53,6 +53,9 @@ class BaseScraper:
         options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.0.0 Safari/537.36')
         options.add_argument('--lang=ja')
         options.add_argument('--blink-settings=imagesEnabled=false')
+        options.add_argument('--disable-blink-features=AutomationControlled')
+        options.add_experimental_option('useAutomationExtension', False)
+        options.add_experimental_option("excludeSwitches", ["enable-automation"])
         self.driver = Chrome(executable_path=settings.chromedriver_path, options=options, service_log_path=os.devnull)
         self.driver.implicitly_wait(5)
 

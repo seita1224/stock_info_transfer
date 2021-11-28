@@ -243,6 +243,10 @@ class InventoryManager():
                         , 'error'
                         ] = e.message
                     is_save_skip = True
+                except Exception as e:
+                    print(f'message: Error, buyma_id: {id_buyma}`')
+                    is_save_skip = True
+                    raise e
 
                 # 正常に処理したキーをセーブキーに追加する。（設定ミスがある場合は追加しない。）
                 if not is_save_skip:

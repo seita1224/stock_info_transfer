@@ -10,6 +10,8 @@ from utils import csv
 from scrape.buyma_scraper import BuymaScraper
 from scrape.asos_scraper import AsosScraper
 from scrape.end_scraper import EndScraper
+from scrape.dress_scraper import DressScraper
+from scrape.mrporter_scraper import MrporterScraper
 from setting import settings
 
 
@@ -21,8 +23,16 @@ class InventoryManager():
 
         self.asos = AsosScraper()
         self.asos.go_top_page()
+
         self.end = EndScraper()
         self.end.go_top_page()
+
+        self.dress = DressScraper()
+        self.dress.go_top_page()
+
+        self.mrporter = MrporterScraper()
+        self.mrporter.go_top_page()
+
 
         self.last_time_stock = self.load_last_time_stock(settings.last_stock_path)
     
@@ -124,6 +134,10 @@ class InventoryManager():
                 supplier = self.asos
             elif 'https://www.endclothing.com/' in url_supplier:
                 supplier = self.end
+            elif 'https://www.dressinn.com/' in url_supplier:
+                supplier = self.dress
+            elif 'https://www.mrporter.com/' in url_supplier:
+                supplier = self.mrporter
 
             stock_data, mistake_list = supplier.run(url_supplier, size_data)
             
@@ -229,6 +243,10 @@ class InventoryManager():
                         , 'error'
                         ] = e.message
                     is_save_skip = True
+                except Exception as e:
+                    print(f'message: Error, buyma_id: {id_buyma}`')
+                    is_save_skip = True
+                    raise e
 
                 # 正常に処理したキーをセーブキーに追加する。（設定ミスがある場合は追加しない。）
                 if not is_save_skip:

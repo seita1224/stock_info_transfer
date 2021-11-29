@@ -7,6 +7,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver.support import expected_conditions
 
 from exception.exceptions import AppException
 from setting import settings
@@ -66,6 +67,15 @@ class BaseScraper:
         """
         self.driver.close()
         self.driver.quit()
+    
+    def get_element_by_xpath_clickable_wait(self, xpath: str) -> WebElement:
+        try:
+            element = self.web_wait.until(expected_conditions.element_to_be_clickable((By.XPATH, xpath)))
+            
+        except TimeoutException:
+            raise ElementNotFoundException(f'xpath: {xpath}')
+
+        return element
     
     def get_element_by_xpath_short_wait(self, xpath: str) -> WebElement:
         try:

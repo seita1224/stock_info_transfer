@@ -153,7 +153,7 @@ class BuymaScraper(BaseScraper):
                 if selected.get_attribute('value') == "2":
                     continue
 
-                select_element = self.get_element_by_xpath(select_xpath)
+                select_element = self.get_element_by_xpath_clickable_wait(select_xpath)
                 select_element.click()
                 select = Select(select_element)
 

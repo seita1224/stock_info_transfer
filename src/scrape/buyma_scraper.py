@@ -2,6 +2,7 @@ from datetime import date
 import time
 from typing import Dict, List
 import re
+from selenium.webdriver.common import action_chains
 
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.remote.webelement import WebElement
@@ -152,9 +153,10 @@ class BuymaScraper(BaseScraper):
                     continue
                 if selected.get_attribute('value') == "2":
                     continue
-
-                select_element = self.get_element_by_xpath(select_xpath)
-                select_element.click()
+                
+                # action_chain = ActionChains(self.driver)
+                # action_chain.click(self.get_element_by_xpath_clickable_wait).perform()
+                select_element = self.get_element_by_xpath_clickable_wait(select_xpath)
                 select = Select(select_element)
 
                 if is_stock:
@@ -207,6 +209,7 @@ class BuymaScraper(BaseScraper):
             item_id (str): 対象のbuyma_id
             code (int): 1(出品再開)/2(出品停止)
         """
+        time.sleep(2)
         change_status_page = self.get_element_by_xpath(f'//*[@data-vt="/vt/my/buyeritems/item_name/{item_id}"]')
         change_status_page.click()
         time.sleep(2)

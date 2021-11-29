@@ -2,6 +2,7 @@ from datetime import date
 import time
 from typing import Dict, List
 import re
+from selenium.webdriver.common import action_chains
 
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.remote.webelement import WebElement
@@ -152,9 +153,10 @@ class BuymaScraper(BaseScraper):
                     continue
                 if selected.get_attribute('value') == "2":
                     continue
-
+                
+                # action_chain = ActionChains(self.driver)
+                # action_chain.click(self.get_element_by_xpath_clickable_wait).perform()
                 select_element = self.get_element_by_xpath_clickable_wait(select_xpath)
-                select_element.click()
                 select = Select(select_element)
 
                 if is_stock:

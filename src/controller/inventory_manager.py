@@ -12,6 +12,7 @@ from scrape.asos_scraper import AsosScraper
 from scrape.end_scraper import EndScraper
 from scrape.dress_scraper import DressScraper
 from scrape.mrporter_scraper import MrporterScraper
+from scrape.farfetch_scraper import FarfetchScraper, farfetchScraper
 from setting import settings
 
 
@@ -33,6 +34,8 @@ class InventoryManager():
         self.mrporter = MrporterScraper()
         self.mrporter.go_top_page()
 
+        self.farfetch = FarfetchScraper()
+        self.farfetch.go_top_page()
 
         self.last_time_stock = self.load_last_time_stock(settings.last_stock_path)
     
@@ -138,6 +141,8 @@ class InventoryManager():
                 supplier = self.dress
             elif 'https://www.mrporter.com/' in url_supplier:
                 supplier = self.mrporter
+            elif 'https://www.farfetch.com/' in url_supplier:
+                supplier = self.farfetch
 
             stock_data, mistake_list = supplier.run(url_supplier, size_data)
             

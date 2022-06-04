@@ -52,15 +52,15 @@ class MrporterScraper(BaseScraper):
             try:
                 self.get_element_by_xpath('//*[@aria-label="Add to Bag"]')
             except ElementNotFoundException:
-                raise IllegalURLException('url_supplier mistake')
+                raise IllegalURLException('url_supplier mistake from mrporter')
             
             return {list(size.values())[0]: True}, []
 
         try:
             elements = self.get_elements_by_xpath('//*[@class="GridSelect11__optionWrapper"]/label')
         except ElementNotFoundException:
-            raise IllegalURLException('url_supplier mistake')
-        
+            raise IllegalURLException('url_supplier mistake from mrporter')
+
         # {'Mrporterのsize表記': '取得した在庫有無（True）'}
 
         mrporter_stock = {element.text: 'sold out' not in element.get_attribute('aria-label') for element in elements}

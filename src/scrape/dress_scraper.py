@@ -52,14 +52,14 @@ class DressScraper(BaseScraper):
             try:
                 self.get_element_by_xpath('//*[@id="añadir_cesta"]')
             except ElementNotFoundException:
-                raise IllegalURLException('url_supplier mistake')
+                raise IllegalURLException('url_supplier mistake from dress')
             
             return {list(size.values())[0]: True}, []
 
         try:
             elements = self.get_elements_by_xpath('//*[@id="tallas_detalle"]/option[text()]')
         except ElementNotFoundException:
-            raise IllegalURLException('url_supplier mistake')
+            raise IllegalURLException('url_supplier mistake from dress')
         
         # {'dressのsize表記': '取得した在庫有無（True）'}
         dress_stock = {element.text.split(' / ')[0]: bool(element.is_enabled()) for element in elements}

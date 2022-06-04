@@ -65,13 +65,13 @@ class FarfetchScraper(BaseScraper):
             try:
                 self.get_element_by_xpath('//*[@data-tstid="addToBag"]')
             except ElementNotFoundException:
-                raise IllegalURLException('url_supplier mistake')
+                raise IllegalURLException('url_supplier mistake from farfetch')
             
             return {list(size.values())[0]: True}, []
         try:
             elements = self.get_elements_by_xpath('//*[@data-tstid="productOffer"]/*[@id="sizesDropdown"]/div/div/div/div/span/span[@data-tstid="sizeDescription"]')
         except ElementNotFoundException:
-            raise IllegalURLException('url_supplier mistake')
+            raise IllegalURLException('url_supplier mistake from farfetch')
         
         # {'Farfetchのsize表記': '取得した在庫有無（True）'}
         # span要素は'text'で取得できないため、get_attribute("textContent")で取得

@@ -52,14 +52,14 @@ class EndScraper(BaseScraper):
             try:
                 self.get_element_by_xpath('//*[@data-test="AddToCart__Button"]')
             except ElementNotFoundException:
-                raise IllegalURLException('url_supplier mistake')
+                raise IllegalURLException('url_supplier mistake from end')
             
             return {list(size.values())[0]: True}, []
 
         try:
             elements = self.get_elements_by_xpath('//*[@data-testid="Size__Button"][text()]')
         except ElementNotFoundException:
-            raise IllegalURLException('url_supplier mistake')
+            raise IllegalURLException('url_supplier mistake from end')
         
         # {'endのsize表記': '取得した在庫有無（True）'}
         end_stock = {element.text : True for element in elements}

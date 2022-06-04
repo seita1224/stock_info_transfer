@@ -51,14 +51,14 @@ class AsosScraper(BaseScraper):
             try:
                 self.get_element_by_xpath('//*[@aria-label="Add to bag"]')
             except ElementNotFoundException:
-                raise IllegalURLException('url_supplier mistake')
+                raise IllegalURLException('url_supplier mistake from asos')
             
             return {list(size.values())[0]: True}, []
 
         try:
             elements = self.get_elements_by_xpath('//*[@id="main-size-select-0"]/option')
         except ElementNotFoundException:
-            raise IllegalURLException('url_supplier mistake')
+            raise IllegalURLException('url_supplier mistake from asos')
         
         # {'Asosのsize表記': '取得した在庫有無（True）'}
         asos_stock = {element.text.split(' - ')[0]: bool(element.is_enabled()) for element in elements}
@@ -68,7 +68,7 @@ class AsosScraper(BaseScraper):
         mistake_size_list = list()
         for asos_size, buyma_size in size.items():
             is_stock = asos_stock.get(asos_size.split(' - ')[0], None)
-            
+
             if is_stock is None:
                 # Asosから取得した在庫情報に設定したサイズが無い = 設定誤りとして検知
                 mistake_size_list.append(asos_size)

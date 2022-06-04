@@ -3,6 +3,8 @@ from typing import Dict, List, Tuple
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.remote.webelement import WebElement
 from exception.exceptions import AppRuntimeException
 
 from scrape.base_scraper import BaseScraper, ElementNotFoundException, scrape_retry
@@ -11,10 +13,21 @@ class IllegalURLException(AppRuntimeException):
     pass
 
 
-class MrporterScraper(BaseScraper):
+class FarfetchScraper(BaseScraper):
+    
+    def get_elements_by_xpath(self, xpath: str) -> List[WebElement]:
+        """ オーバーライド
+        """
+        try:
+            elements = self.driver.find_elements_by_xpath(xpath)
+        except TimeoutException:
+            # TODO 適切なメッセージの検討
+            raise ElementNotFoundException(f'xpath: {xpath}')
+
+        return elements
 
     def go_top_page(self) -> None:
-        """ MrporterのTopページに移動する
+        """ farfetchのTopページに移動する
         """
         pass
 
@@ -27,21 +40,21 @@ class MrporterScraper(BaseScraper):
         """
 
         try:
-            is_sales = self.get_element_by_xpath_short_wait('//*[@aria-label="Add to Bag"]')
+            out_stock = self.get_element_by_xpath_short_wait('//*[@data-tstid="addToBag"]')
         except ElementNotFoundException:
-            # Elementが見つからない　= 在庫切れ
+            # Elementが見つからない　= 在庫切れではない
             return True
         
-        if is_sales:
-           return False
+        if not out_stock:
+           return True
         
-        return True
+        return False
 
     def get_stock_by_size(self, size: Dict) -> Tuple[Dict[str, bool], List[str]]:
         """ サイズごとの在庫の有無を取得する
 
         Args:
-            size (Dict): 取得対象{'Mrporterのサイズ表記': 'Buymaのサイズ表記'}
+            size (Dict): 取得対象{'Farfetchのサイズ表記': 'Buymaのサイズ表記'}
 
         Returns:
             Tuple[Dict[str, bool], List[str]]: ({'Buymaのサイズ表記': '在庫の有無(True(有り)/False(無し))'}, 設定誤りのサイズリスト)
@@ -50,30 +63,29 @@ class MrporterScraper(BaseScraper):
         if len(size_list) == 1 and size_list[0] == '':
             # アクセサリー等のsizeが無いもの処理
             try:
-                self.get_element_by_xpath('//*[@aria-label="Add to Bag"]')
+                self.get_element_by_xpath('//*[@data-tstid="addToBag"]')
             except ElementNotFoundException:
                 raise IllegalURLException('url_supplier mistake')
             
             return {list(size.values())[0]: True}, []
-
         try:
-            elements = self.get_elements_by_xpath('//*[@class="GridSelect11__optionWrapper"]/label')
+            elements = self.get_elements_by_xpath('//*[@data-tstid="productOffer"]/*[@id="sizesDropdown"]/div/div/div/div/span/span[@data-tstid="sizeDescription"]')
         except ElementNotFoundException:
             raise IllegalURLException('url_supplier mistake')
         
-        # {'Mrporterのsize表記': '取得した在庫有無（True）'}
-
-        mrporter_stock = {element.text: 'sold out' not in element.get_attribute('aria-label') for element in elements}
-
+        # {'Farfetchのsize表記': '取得した在庫有無（True）'}
+        # span要素は'text'で取得できないため、get_attribute("textContent")で取得
+        farfetch_stock = {element.get_attribute("textContent"): bool(element.is_enabled()) for element in elements}
+        print(farfetch_stock)
         stock = dict()
 
         mistake_size_list = list()
-        for mrporter_size, buyma_size in size.items():
-            is_stock = mrporter_stock.get(mrporter_size, None)
+        for farfetch_size, buyma_size in size.items():
+            is_stock = farfetch_stock.get(farfetch_size, None)
             
             if is_stock is None:
-                # Mrporterから取得した在庫情報に設定したサイズが無い = 設定誤りとして検知
-                mistake_size_list.append(mrporter_size)
+                # Farfetchから取得した在庫情報に設定したサイズが無い = 設定誤りとして検知
+                mistake_size_list.append(farfetch_size)
 
             else:
                 stock[buyma_size] = is_stock
@@ -86,11 +98,11 @@ class MrporterScraper(BaseScraper):
 
 
     def run(self, url: str,  size: Dict[str, str]) -> Tuple[Dict[str, bool], List[str]]:
-        """　Mrporterの在庫を取得する
+        """ Farfetchの在庫を取得する
 
         Args:
-            url (str): Mrporterのurl
-            size (Dict[str, str]): {Mrporterのサイズ表記: Buymaのサイズ表記}
+            url (str): Farfetchのurl
+            size (Dict[str, str]): {Farfetchのサイズ表記: Buymaのサイズ表記}
 
         Returns:
             Tuple[Dict[str, bool], List[str]]: ({'Buymaのサイズ表記': '在庫の有無(True(有り)/False(無し))'}, 設定誤りのサイズリスト)

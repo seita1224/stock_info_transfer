@@ -209,7 +209,6 @@ class BuymaScraper(BaseScraper):
             item_id (str): 対象のbuyma_id
             code (int): 1(出品再開)/2(出品停止)
         """
-        time.sleep(2)
         change_status_page = self.get_element_by_xpath(f'//*[@data-vt="/vt/my/buyeritems/item_name/{item_id}"]')
         change_status_page.click()
         time.sleep(2)

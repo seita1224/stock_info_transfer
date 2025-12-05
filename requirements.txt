@@ -205,9 +205,9 @@ trio-websocket==0.9.2; python_version >= "3.7" and python_version < "4.0" \
 trio==0.19.0; python_version >= "3.7" and python_version < "4.0" \
     --hash=sha256:c27c231e66336183c484fbfe080fa6cc954149366c15dc21db8b7290081ec7b8 \
     --hash=sha256:895e318e5ec5e8cea9f60b473b6edb95b215e82d99556a03eb2d20c5e027efe1
-urllib3==1.26.7; python_version >= "3.7" and python_full_version < "3.0.0" and python_version < "4.0" or python_full_version >= "3.5.0" and python_version < "4" and python_version >= "3.7" \
-    --hash=sha256:c4fdf4019605b6e5423637e01bc9fe4daef873709a7973e195ceba0a62bbc844 \
-    --hash=sha256:4987c65554f7a2dbf30c18fd48778ef124af6fab771a377103da0585e2336ece
+urllib3==2.6.0; python_version >= "3.7" and python_full_version < "3.0.0" and python_version < "4.0" or python_full_version >= "3.5.0" and python_version < "4" and python_version >= "3.7" \
+    --hash=sha256:c90f7a39f716c572c4e3e58509581ebd83f9b59cced005b7db7ad2d22b0db99f \
+    --hash=sha256:cb9bcef5a4b345d5da5d145dc3e30834f58e8018828cbc724d30b4cb7d4d49f1
 wsproto==1.0.0; python_version >= "3.7" and python_version < "4.0" and python_full_version >= "3.6.1" \
     --hash=sha256:d8345d1808dd599b5ffb352c25a367adb6157e664e140dbecba3f9bc007edb9f \
     --hash=sha256:868776f8456997ad0d9720f7322b746bbe9193751b5b290b7f924659377c8c38
